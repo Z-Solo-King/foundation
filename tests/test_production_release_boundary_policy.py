@@ -122,10 +122,8 @@ def test_operations_deploy_staging_is_allowlisted_and_bundle_audited():
     assert "audit_operations_worker_bundle()" in text
     assert 'cp "$RUNNER_TEMP/operations/worker.py"' in text
     assert 'for runtime_dir in private extractor_mapper foundation_core backend' in text
-    assert 'test ! -e "$stage_dir/tests"' in text
-    assert 'test ! -e "$stage_dir/tools"' in text
-    assert 'test ! -e "$stage_dir/backup"' in text
-    assert 'test ! -e "$stage_dir/.venv-workers"' in text
+    assert "forbidden in tests tools backup .venv-workers CONTINUE_MIGRATION_2026-10-01.md" in text
+    assert 'test ! -e "$stage_dir/$forbidden"' in text
     assert '--dry-run --outdir "$out_dir"' in text
     assert 'PROVIDER_KEYS_JSON.txt' in text
     assert 'SILICONFLOW_API_KEY.txt' in text
@@ -139,16 +137,9 @@ def test_reciprocal_service_bindings_use_binding_free_bootstrap():
     assert "Operations binding-free bootstrap deployment: PASS" in text
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert '[[services]]' in text
-    assert (
-        '(cd "$RUNNER_TEMP/operations-worker-bootstrap" && pywrangler deploy --config wrangler.toml'
-        in text
-    )
-    assert (
-        text.count(
-            '(cd "$RUNNER_TEMP/operations-worker-bootstrap" && pywrangler deploy --config wrangler.toml'
-        )
-        == 1
-    )
+    assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
+    assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
+    assert text.count('(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file') == 1
     assert '/workers/scripts/${OPERATIONS_SERVICE_NAME}/settings' not in text
 
 def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
@@ -156,5 +147,6 @@ def test_operations_bootstrap_config_lives_with_entrypoint_checkout():
     assert 'bootstrap_config="$RUNNER_TEMP/operations/wrangler.bootstrap.toml"' in text
     assert 'cp "$RUNNER_TEMP/operations/wrangler.toml" "$bootstrap_config"' in text
     assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
-    assert '(cd "$RUNNER_TEMP/operations" && pywrangler deploy --config "$bootstrap_config"' in text
+    assert 'operations_bootstrap_stage="$RUNNER_TEMP/operations-worker-bootstrap"' in text
+    assert '(cd "$operations_bootstrap_stage" && pywrangler deploy --config wrangler.toml --secrets-file' in text
 # fmt: on
