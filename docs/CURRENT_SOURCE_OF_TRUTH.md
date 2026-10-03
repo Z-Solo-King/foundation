@@ -246,3 +246,7 @@ The canonical cross-repository workflow still owns hosted CI in Foundation. Oper
 ## 2026-10-04 controlled production-release retry
 
 The first controlled production release after the Operations pin promotion reached the canonical release workflow but exposed two release-path defects: the pre-deployment Foundation test invocation crossed the public/private migration boundary, and sanitized receipt publication to issue #58 treated GitHub's comment-limit response as fatal. Both defects were corrected and merged in Foundation PR #1939. The next controlled production reconciliation is therefore an execution of the corrected canonical release path; no deployment authority or acceptance gate is changed by the retry.
+
+## 2026-10-04 final controlled production reconciliation
+
+The production release path is now corrected and has retained its 100% public-suite coverage floor. This commit is the controlled execution trigger for the canonical production release workflow; it changes no runtime authority, provider credentials, or acceptance policy.
