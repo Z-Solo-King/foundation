@@ -49,6 +49,7 @@ concurrency:
 
 jobs:
   crossfire:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: production-secret-sync
     timeout-minutes: 15

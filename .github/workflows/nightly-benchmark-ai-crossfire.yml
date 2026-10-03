@@ -22,6 +22,7 @@ concurrency:
 jobs:
   crossfire:
     name: AI cross-fire
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -52,18 +53,20 @@ jobs:
           if [ -n "$MANUAL_RUN_ID" ]; then
             run_id="$MANUAL_RUN_ID"
           else
-            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main --limit 20 --json databaseId,status,conclusion,headBranch --jq '.[] | select(.status == "completed" and .conclusion == "success" and .headBranch == "main") | .databaseId' | head -n 1)"
+            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main --limit 20 --json databaseId,status,conclusion,headBranch,headSha,createdAt --jq '.[] | select(.status == "completed" and .conclusion == "success" and .headBranch == "main" and (.headSha|type) == "string" and (.headSha|length) == 40) | .databaseId' | head -n 1)"
           fi
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.headSha' .runtime/benchmark-run.json)" >> "$GITHUB_OUTPUT"
 
       - name: Validate benchmark run provenance
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
+          SOURCE_SHA: ${{ steps.run.outputs.head_sha }}
         run: |
           set -euo pipefail
-          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event > .runtime/benchmark-run.json
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json databaseId,name,status,conclusion,headSha,headBranch,event,createdAt > .runtime/benchmark-run.json
           jq -e '
             (.name == "Autonomous benchmark"
               or .name == "Autonomous Benchmark"
@@ -71,6 +74,8 @@ jobs:
             and .status == "completed"
             and .conclusion == "success"
             and .headBranch == "main"
+            and (.headSha|type) == "string"
+            and (.headSha|length) == 40
           ' .runtime/benchmark-run.json >/dev/null
 
       - name: Download final evidence
@@ -82,6 +87,7 @@ jobs:
           mkdir -p .runtime/input
           gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name autonomous-nightly-benchmark-final --dir .runtime/input
           test -s .runtime/input/autonomous-nightly-benchmark-final.json
+          jq -e --arg run_id "$RUN_ID" --arg source_sha "$(jq -r '.headSha' .runtime/benchmark-run.json)" '.schema == "autonomous-nightly-benchmark-final/v2" and (.run_id|tostring) == $run_id and .repository_revision == $source_sha' .runtime/input/autonomous-nightly-benchmark-final.json >/dev/null
 
       - name: Run Cloudflare-native six-model cross-fire
         env:
