@@ -14,7 +14,7 @@ on:
         default: ""
         type: string
       operations_research_ref:
-        description: "Exact Operations revision deployed to the private production runtime"
+        description: "Exact immutable Operations revision being validated for the private production runtime"
         required: false
         default: "51756272e0a161ca6367e981481b17b65e61d5c9"
         type: string
