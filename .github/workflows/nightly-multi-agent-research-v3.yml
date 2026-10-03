@@ -266,6 +266,13 @@ jobs:
           git -C "$RUNNER_TEMP/operations-research" fetch --no-tags --depth=1 origin "$OPERATIONS_RESEARCH_REF"
           git -C "$RUNNER_TEMP/operations-research" checkout --detach "$OPERATIONS_RESEARCH_REF"
           test "$(git -C "$RUNNER_TEMP/operations-research" rev-parse HEAD)" = "$OPERATIONS_RESEARCH_REF"
+      - name: Install pinned Operations research runtime dependencies
+        working-directory: ${{ runner.temp }}/operations-research
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-deps -e .
+          python -m pip install --disable-pip-version-check "httpx>=0.27,<1" "lxml>=5,<7"
+
       - name: Validate pinned Operations research contract
         working-directory: ${{ runner.temp }}/operations-research
         shell: bash
