@@ -1,0 +1,30 @@
+name: Temporary Prettier export
+
+on:
+  push:
+    branches:
+      - refactor/microscopic-dedup-20261003
+
+permissions:
+  contents: read
+
+jobs:
+  format-export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Format selected files
+        run: |
+          set -euo pipefail
+          npx --yes prettier@3.9.9 --write             benchmark/ai_agent_task_matrix_v1.json             docs/FAMILY_FULL_COVERAGE_MATRIX.json             docs/FAMILY_SYNC_STATE.json
+      - name: Upload formatted files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: prettier-export-${{ github.sha }}
+          path: |
+            benchmark/ai_agent_task_matrix_v1.json
+            docs/FAMILY_FULL_COVERAGE_MATRIX.json
+            docs/FAMILY_SYNC_STATE.json
+          if-no-files-found: error
+          retention-days: 1
