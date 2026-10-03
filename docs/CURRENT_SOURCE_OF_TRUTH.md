@@ -171,7 +171,7 @@ The canonical human/AI navigation entrypoint is `docs/AI_SYSTEM_DIRECTORY.md`, b
 
 ## 2026-10-02 repository hygiene and documentation synchronization
 
-Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.py` and mapped contract/document relationships by `tools/code_documentation_sync.py`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
+Foundation now carries a machine-enforced repository hygiene and code-documentation synchronization system. The canonical contract is `docs/REPOSITORY_HYGIENE_FORMAT_CONTRACT.json`; changed files are checked by `tools/repository_hygiene.mjs` and mapped contract/document relationships by `tools/code_documentation_sync.mjs`. Foundation's family coordinator compares the shared contract against Operations without publishing private source contents. This is a source/CI governance capability, not runtime certification.
 
 ## 2026-10-02 current-main reconciliation
 

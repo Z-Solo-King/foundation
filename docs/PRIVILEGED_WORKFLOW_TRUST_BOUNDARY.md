@@ -134,3 +134,7 @@ Validation note: protected CI must evaluate the exact PR head after every runtim
 ## Production receipt publication fallback — 2026-10-04
 
 The canonical production release retains a sanitized receipt artifact as the durable evidence record. Publication of that receipt as a comment on issue #58 is best-effort because GitHub limits an issue to 2,500 comments; a comment-publication failure must not invalidate an otherwise successful release or remove the retained artifact evidence. The workflow does not treat issue-comment availability as deployment state or promotion authority.
+
+## Production receipt publication on high-volume issues — 2026-10-04
+
+The canonical production release always writes its sanitized receipt to workflow artifacts. Publishing a copy to issue #58 is best-effort because GitHub disables comments after an issue exceeds 2,500 comments. A comment-publication failure must not convert a successful release transaction into a deployment failure; the artifact receipt remains the machine-readable evidence surface.
