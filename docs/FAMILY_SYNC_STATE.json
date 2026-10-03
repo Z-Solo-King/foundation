@@ -275,8 +275,8 @@
     "total_branches": 2310,
     "note": "Current counts are live GitHub pagination boundaries; retirement executor remains fail-closed."
   }
-,
-  "continuity_refresh_2026_10_03":   {
+  },
+  "continuity_refresh_2026_10_03": {
     "canonical_workflow": "cross-repository-contract-drift.yml",
     "docs": [
       "docs/CURRENT_SOURCE_OF_TRUTH.md",
