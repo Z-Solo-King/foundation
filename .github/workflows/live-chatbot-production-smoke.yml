@@ -23,7 +23,6 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
-  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
   TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
@@ -31,6 +30,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
+          fetch-depth: 1
+
+      - name: Resolve production Operations pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(jq -er '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "OPERATIONS_REF=$ref" >> "$GITHUB_ENV"
       - name: Wait for deployed revision
         env:
           EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
