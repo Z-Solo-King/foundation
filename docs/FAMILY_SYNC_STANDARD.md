@@ -279,10 +279,17 @@ The repository now has a machine-enforced microscopic deduplication standard: sh
 The CI repair also preserves the existing cross-repository authority model. The Foundation contract-drift workflow obtains a read-only Operations token using the canonical GitHub App token action, while the single live Operations feed workflow remains an explicitly classified exception rather than an undocumented private-runtime workflow.
 
 The nightly AI CrossFire remains advisory-only. Its existing Operations implementation executes six Workers AI models in parallel and emits schema, transport, latency, neuron, consensus, and provenance evidence; it does not acquire mutation or promotion authority.
-\n
 
 ## Post-merge CI boundary reconciliation — 2026-10-03
 
 Family-wide validation materializes the disposable Foundation public core into the Operations test checkout from the validated Foundation revision. This keeps Foundation as the sole owner while satisfying legacy Operations test fixtures that require the generated compatibility tree.
 
 Cross-repository language-fit generation runs with both repository roots on `PYTHONPATH`, allowing Operations compatibility imports to resolve the same Foundation public core without copying source ownership into Operations.
+
+## CrossFire and private Operations validation boundary — 2026-10-03
+
+The Migration Factory CrossFire now preserves its hidden runtime reports during artifact upload so all six independent lanes and both repository lenses remain aggregatable.
+
+The centralized Operations validation workflow treats the live custom website product-feed workflow as the sole sanctioned Operations workflow exception. Private runtime workflows remain governed by the Foundation authority boundary.
+
+The nightly multi-agent research workflow installs the private research runner's HTTP client dependency before execution. This repairs the live runner dependency boundary without weakening the production gate or treating deterministic dry-run output as real research evidence.
