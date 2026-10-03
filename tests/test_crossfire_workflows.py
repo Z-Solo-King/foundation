@@ -19,6 +19,21 @@ def test_provider_crossfire_allows_up_to_six_and_records_unavailable_comparison(
     assert "--providers-max 6" in text
     assert "comparison_unavailable" in text
     assert "fewer than two configured direct providers" in text
+    assert "path: operations-provider-benchmark" in text
+    assert "${{ runner.temp }}/operations-provider-benchmark" not in text
+    assert "${{ github.workspace }}/operations-provider-benchmark" in text
+    assert "PROVIDER_KEYS_JSON_FILE" in text
+    for secret_name in (
+        "OPENROUTER_API_KEY",
+        "GROQ_API_KEY",
+        "GEMINI_API_KEY",
+        "CEREBRAS_API_KEY",
+        "NVIDIA_NIM_API_KEY",
+        "COHERE_API_KEY",
+        "HF_TOKEN",
+        "SILICONFLOW_API_KEY",
+    ):
+        assert f"${{ secrets.{secret_name} }}" in text
 
 
 def test_live_provider_crossfire_has_autonomous_nightly_trigger():

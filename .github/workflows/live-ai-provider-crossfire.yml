@@ -25,7 +25,7 @@ jobs:
     name: Private provider speed-quality cross-fire
     runs-on: ubuntu-latest
     environment: production-secret-sync
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Checkout Foundation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,7 +33,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Mint read-only Operations App token
         id: operations-token
@@ -57,21 +57,32 @@ jobs:
           if [ -z "$ref" ]; then ref="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"; fi
           [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Operations revision must be a 40-hex immutable SHA"; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout private Operations benchmark
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations-provider-benchmark
+          path: operations-provider-benchmark
           persist-credentials: false
 
+      - name: Install private benchmark
+        working-directory: operations-provider-benchmark
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
       - name: Validate platform access cross-fire contract
-        working-directory: ${{ runner.temp }}/operations-provider-benchmark
+        working-directory: operations-provider-benchmark
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set -euo pipefail
           python - <<'PY'
           from private.chatbot.platform_access import validate_platform_matrix, crossfire_lanes
+
           platforms = validate_platform_matrix()
           lanes = crossfire_lanes()
           assert len(platforms) == 22
@@ -80,20 +91,120 @@ jobs:
           print({"platforms": len(platforms), "lanes": len(lanes)})
           PY
 
-      - name: Run private provider cross-fire
+      - name: Assemble canonical provider credentials
+        id: provider-config
+        working-directory: operations-provider-benchmark
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
-          HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_CROSSFIRE_RUNNER: ${{ runner.temp }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          catalog = json.loads(Path("private/chatbot/provider_transport_catalog.json").read_text(encoding="utf-8"))
+          specs = {
+              item["id"]: item
+              for item in catalog.get("providers", ())
+              if item.get("id") in {
+                  "openrouter_free",
+                  "groq",
+                  "gemini",
+                  "cerebras",
+                  "nvidia_nim",
+                  "cohere_free",
+                  "huggingface_free",
+                  "siliconflow",
+              }
+          }
+
+          raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
+          aggregate_valid = True
+          aggregate = {}
+          if raw:
+              try:
+                  value = json.loads(raw)
+                  if isinstance(value, dict):
+                      aggregate = value
+                  else:
+                      aggregate_valid = False
+              except json.JSONDecodeError as exc:
+                  aggregate_valid = False
+                  print(f"aggregate provider secret ignored: invalid JSON ({exc.msg})")
+          else:
+              aggregate_valid = False
+
+          config = {}
+          for provider, value in aggregate.items():
+              spec = specs.get(provider)
+              if not spec or not isinstance(value, dict):
+                  continue
+              api_key = value.get("api_key")
+              if isinstance(api_key, str) and api_key.strip():
+                  config[provider] = {
+                      "endpoint": str(spec["endpoint"]),
+                      "api_key": api_key.strip(),
+                      "model": str(spec["model"]),
+                      "zero_cost": True,
+                  }
+
+          for provider, spec in specs.items():
+              env_name = str(spec["key"])
+              api_key = os.environ.get(env_name, "").strip()
+              if api_key:
+                  config[provider] = {
+                      "endpoint": str(spec["endpoint"]),
+                      "api_key": api_key,
+                      "model": str(spec["model"]),
+                      "zero_cost": True,
+                  }
+
+          if not config:
+              raise SystemExit("no usable provider credentials were available from aggregate JSON or direct provider secrets")
+
+          target = Path(os.environ["RUNNER_TEMP"]) / "provider_keys.json"
+          target.write_text(json.dumps(config, separators=(",", ":")), encoding="utf-8")
+          target.chmod(0o600)
+          Path("provider-config-receipt.json").write_text(
+              json.dumps(
+                  {
+                      "schema": "provider-config-assembly/v2",
+                      "aggregate_config_valid": aggregate_valid,
+                      "provider_count": len(config),
+                      "providers": sorted(config),
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          print(f"provider configuration assembly: PASS ({len(config)} providers; aggregate_json_valid={aggregate_valid})")
+          PY
+          echo "config_file=${RUNNER_TEMP}/provider_keys.json" >> "$GITHUB_OUTPUT"
+
+      - name: Run private provider cross-fire
+        working-directory: operations-provider-benchmark
+        env:
+          PROVIDER_KEYS_JSON_FILE: ${{ steps.provider-config.outputs.config_file }}
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set +e
-          mkdir -p .runtime/live-ai-crossfire
-          python benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/runner.log 2>&1
+          mkdir -p ../.runtime/live-ai-crossfire
+          python private/benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 18 --output ../.runtime/live-ai-crossfire/private.json > ../.runtime/live-ai-crossfire/runner.log 2>&1
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
-            if grep -q '^need at least 2 configured AI providers for cross-fire;' .runtime/live-ai-crossfire/runner.log; then
-              provider_count=$(sed -n 's/.*found \([0-9][0-9]*\)$/\1/p' .runtime/live-ai-crossfire/runner.log | tail -1)
+            if grep -q '^need at least 2 configured AI providers for cross-fire;' ../.runtime/live-ai-crossfire/runner.log; then
+              provider_count=$(sed -n 's/.*found \([0-9][0-9]*\)$/\1/p' ../.runtime/live-ai-crossfire/runner.log | tail -1)
               provider_count="${provider_count:-0}"
               jq -n --argjson provider_count "$provider_count" '{
                 schema:"live-ai-provider-crossfire-summary/v1",
@@ -104,14 +215,14 @@ jobs:
                 providers:[],
                 call_count:0,
                 batch_wall_ms:null
-              }' > .runtime/live-ai-crossfire/private.json
+              }' > ../.runtime/live-ai-crossfire/private.json
               echo "Provider cross-fire comparison unavailable; recorded bounded non-comparative receipt."
             else
-              cat .runtime/live-ai-crossfire/runner.log
+              cat ../.runtime/live-ai-crossfire/runner.log
               exit "$status"
             fi
           fi
-          test -s .runtime/live-ai-crossfire/private.json
+          test -s ../.runtime/live-ai-crossfire/private.json
 
       - name: Create public-safe summary
         if: always()
@@ -120,11 +231,26 @@ jobs:
           test -s .runtime/live-ai-crossfire/private.json
           jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
-      - name: Upload public-safe evidence
+      - name: Upload live benchmark evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: live-ai-provider-crossfire
-          path: .runtime/live-ai-crossfire/summary.json
+          name: live-ai-provider-crossfire-2026-10-03
+          path: |
+            .runtime/live-ai-crossfire
+            operations-provider-benchmark/provider-config-receipt.json
           retention-days: 30
           if-no-files-found: error
+
+      - name: Enforce comparative benchmark availability
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          summary=.runtime/live-ai-crossfire/summary.json
+          test -s "$summary"
+          comparison_state="$(jq -r '.comparison_state // "complete"' "$summary")"
+          if [ "$comparison_state" = "comparison_unavailable" ]; then
+            echo "Provider CrossFire incomplete: fewer than two configured providers; benchmark result remains non-comparative."
+            exit 1
+          fi
