@@ -274,7 +274,6 @@
     "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs.",
     "total_branches": 2310,
     "note": "Current counts are live GitHub pagination boundaries; retirement executor remains fail-closed."
-  }
   },
   "continuity_refresh_2026_10_03": {
     "canonical_workflow": "cross-repository-contract-drift.yml",
