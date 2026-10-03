@@ -1,6 +1,6 @@
 name: Centralized Operations validation
 
-'on':
+"on":
   push:
     branches: [main]
     paths:
@@ -133,4 +133,3 @@ jobs:
             jq -c 'map({name,path,type})' "$RUNNER_TEMP/operations-workflows.json" 2>/dev/null || cat "$RUNNER_TEMP/operations-workflows.json"
             exit 1
           fi
-
