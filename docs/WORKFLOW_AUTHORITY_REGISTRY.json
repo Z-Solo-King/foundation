@@ -74,7 +74,8 @@
     "privileged_push_branch": "main",
     "principle": "workflow authority is a machine-enforced boundary; documentation alone is insufficient",
     "trusted_workflow_run_sources": {
-      ".github/workflows/live-nightly-research-canary.yml": ["nightly multi-agent research"]
+      ".github/workflows/live-nightly-research-canary.yml": ["nightly multi-agent research"],
+      ".github/workflows/nightly-benchmark-ai-crossfire.yml": ["autonomous benchmark"]
     },
     "repository_hygiene_autofix": {
       "mode": "mechanical_formatter_only",

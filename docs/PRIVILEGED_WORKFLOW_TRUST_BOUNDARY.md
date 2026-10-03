@@ -79,7 +79,7 @@ The promotion PR may stage the next immutable Operations revision in post-releas
 
 The nightly benchmark AI cross-fire workflow is advisory-only. GitHub Actions selects only a successful autonomous benchmark run from `main`, validates its provenance, reads the immutable Operations production pin from `docs/OPERATIONS_PIN_MANIFEST.json`, and sends only a bounded evidence envelope to the canonical `heroic-ai.pages.dev` boundary.
 
-The model fan-out executes inside the authenticated Operations runtime through its native Workers AI binding. The workflow does not hold or use a Cloudflare API token for model execution. Operations verifies the expected immutable runtime pin before invoking the six-model cross-fire.
+The model fan-out executes inside the authenticated Operations runtime through its native Workers AI binding. The workflow does not hold or use a Cloudflare API token for model execution. Operations verifies the expected immutable runtime pin before invoking the six-model cross-fire. The six current lanes are empirically qualified instruction-oriented models; each request uses temperature 0, seed 17, JSON mode, a 128-token budget, and one bounded recovery attempt for invalid/incomplete output.
 
 The aggregate is invalid unless all six configured models return transport-successful, schema-compliant advisory results and the returned Operations pin equals the Foundation production pin. AI output cannot authorize acceptance, production promotion, credentials, policy changes, Cloudflare mutation, or workflow dispatch.
 

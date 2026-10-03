@@ -41,15 +41,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .runtime/operations-guard
+          mkdir -p .runtime/operations-guard/raw
           headers=(-H 'Accept: application/vnd.github+json' -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28')
-          curl -fsS "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations > .runtime/operations-guard/repository.json
-          curl -fsS "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations/branches/main > .runtime/operations-guard/main.json
-          code="$(curl -sS -o .runtime/operations-guard/workflows.json -w '%{http_code}' "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations/contents/.github/workflows)"
+          curl -fsS "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations > .runtime/operations-guard/raw/repository.json
+          curl -fsS "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations/branches/main > .runtime/operations-guard/raw/main.json
+          main_sha="$(jq -er '.commit.sha' .runtime/operations-guard/raw/main.json)"
+          test "${#main_sha}" -eq 40
+          approved_sha="$(jq -er '.approved_sha' docs/OPERATIONS_MAIN_APPROVAL.json)"
+          compare_code="$(curl -sS -o .runtime/operations-guard/raw/compare.json -w '%{http_code}' "${headers[@]}" "https://api.github.com/repos/Z-Solo-King/operations/compare/${approved_sha}...${main_sha}")"
+          test "$compare_code" = 200
+          code="$(curl -sS -o .runtime/operations-guard/raw/workflows.json -w '%{http_code}' "${headers[@]}" https://api.github.com/repos/Z-Solo-King/operations/contents/.github/workflows)"
           case "$code" in
             404) echo '{"present":false}' > .runtime/operations-guard/workflows-state.json ;;
-            200) jq -n --argjson x "$(cat .runtime/operations-guard/workflows.json)" '{present:true,entries:($x|map(.name))}' > .runtime/operations-guard/workflows-state.json ;;
-            *) echo "unexpected workflow API status: $code" >&2; cat .runtime/operations-guard/workflows.json >&2 || true; exit 1 ;;
+            200) jq -n --argjson x "$(cat .runtime/operations-guard/raw/workflows.json)" '{present:true,count:($x|length)}' > .runtime/operations-guard/workflows-state.json ;;
+            *) echo "unexpected workflow API status: $code" >&2; exit 1 ;;
           esac
 
       - name: Validate immutable approval
@@ -59,27 +64,43 @@ jobs:
           set -euo pipefail
           approved_sha="$(jq -r '.approved_sha // empty' docs/OPERATIONS_MAIN_APPROVAL.json)"
           test "${#approved_sha}" -eq 40
-          jq -n --arg approved "$approved_sha" --slurpfile repo .runtime/operations-guard/repository.json --slurpfile branch .runtime/operations-guard/main.json --slurpfile workflows .runtime/operations-guard/workflows-state.json '{repository:$repo[0],mainBranch:$branch[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}' > .runtime/operations-guard/input.json
+          jq -n --arg approved "$approved_sha" --slurpfile repo .runtime/operations-guard/raw/repository.json --slurpfile branch .runtime/operations-guard/raw/main.json --slurpfile compare .runtime/operations-guard/raw/compare.json --slurpfile workflows .runtime/operations-guard/workflows-state.json '{repository:$repo[0],mainBranch:$branch[0],comparison:$compare[0],workflowsPresent:($workflows[0].present),approvedSha:$approved}' > .runtime/operations-guard/input.json
           node tools/validate_operations_main_guard.mjs .runtime/operations-guard/input.json > .runtime/operations-guard/receipt.json
 
+      - name: Write sanitized integrity receipt
+        if: always()
+        env:
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=PASS
+          if [[ "${VALIDATE_OUTCOME:-skipped}" != "success" ]]; then state=FAIL; fi
+          mkdir -p .runtime/operations-guard
+          jq -n --arg state "$state" --arg run_id "$GITHUB_RUN_ID" '{schema:"operations-main-integrity-receipt/v2",state:$state,run_id:($run_id|tonumber),private_metadata_omitted:true}' > .runtime/operations-guard/receipt.json
+
       - name: Record integrity incident
-        if: steps.validate.outcome == 'failure'
+        if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          observed="$(jq -r '.observed_main_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
-          approved="$(jq -r '.approved_sha // "unknown"' .runtime/operations-guard/receipt.json 2>/dev/null || true)"
           number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search '"[integrity] Operations main drift" in:title' --json number --limit 1 --jq '.[0].number // empty')"
-          body="$(printf '%s\n' '# Operations main integrity incident' '' 'The private Operations repository does not match the Foundation-approved immutable production revision.' '' "Observed main: \`$observed\`" "Approved revision: \`$approved\`" '' 'Do not treat Operations main as production authority until the revision is reviewed and the Foundation approval manifest is intentionally updated.')"
+          body="$(printf '%s\n' '# Operations main integrity incident' '' 'The private Operations repository failed the integrity guard. Private repository metadata and revision identifiers are intentionally omitted from this public incident record.' '' "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")"
           if [[ -z "$number" ]]; then gh issue create --repo "$GITHUB_REPOSITORY" --title "[integrity] Operations main drift" --body "$body" >/dev/null; else gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body "$body" >/dev/null; fi
+
+      - name: Remove raw private inspection data
+        if: always()
+        shell: bash
+        run: |
+          rm -rf .runtime/operations-guard/raw .runtime/operations-guard/input.json
 
       - name: Upload integrity receipt
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: operations-private-integrity-${{ github.run_id }}
-          path: .runtime/operations-guard/
+          path: .runtime/operations-guard/receipt.json
           if-no-files-found: error
           retention-days: 30
