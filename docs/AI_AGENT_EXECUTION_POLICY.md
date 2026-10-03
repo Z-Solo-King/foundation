@@ -41,3 +41,12 @@ Security controls are part of the execution contract.
 - Production pin checks are lineage checks: an approved revision may legitimately remain an ancestor of a moving `main`. Do not interpret ordinary forward advancement as integrity drift.
 - Required security, hygiene, provenance and release gates are fail-closed. Never weaken or bypass them merely to obtain a green status. External credential/token-health failures remain explicitly classified as `EXTERNAL/ADMIN`.
 - Use parallel lanes for independent investigation only; serialize writes, production changes and merges.
+## 14. Execution efficiency and repair loop
+
+- Begin every repair cycle from live GitHub state: current main SHA, open issues, open PRs, failed workflow jobs, and review/comment state. Historical documents are context, not queue authority.
+- Group failures by root cause before changing code. Fix the canonical owner once rather than patching downstream symptoms or retrying deterministic failures.
+- Parallelize independent read-only inspection and focused validation; serialize branch writes, merges, releases, and policy changes.
+- After each code fix, run the smallest deterministic check that can falsify the hypothesis, then the affected workflow/contract gate, then the broader post-merge gate.
+- Retry only transient/external failures with unchanged inputs. A deterministic failure must be repaired before rerun; a green retry is not evidence of correctness.
+- Keep acceptance, incident, autonomous-mission, and superseded work distinct. Close only records whose terminal state is evidenced; never close an acceptance item merely to reduce queue size.
+- Prefer minimal diffs that preserve existing authority boundaries, generated-source ownership, immutable revision semantics, and public/private data boundaries.
