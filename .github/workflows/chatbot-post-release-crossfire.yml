@@ -168,6 +168,22 @@ jobs:
 
           test -s .runtime/chatbot-crossfire/private.json
 
+      - name: Enforce five-provider minimum
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .runtime/chatbot-crossfire/private.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path(".runtime/chatbot-crossfire/private.json").read_text(encoding="utf-8"))
+          names=list(data.get("providers_tested") or [])
+          print("CrossFire providers tested:", ", ".join(names) if names else "none")
+          print("CrossFire provider count:", len(names))
+          if len(names) < 5:
+              raise SystemExit(f"five-provider minimum not met: {len(names)}/5")
+          PY
+
       - name: Produce public-safe CrossFire receipt
         if: always()
         run: |
