@@ -22,15 +22,15 @@ jobs:
           import fs from "node:fs";
           const path = ".github/workflows/migration-factory.yml";
           let s = fs.readFileSync(path, "utf8");
-          s = s.replace(/fs\.writeFileSync\("\.runtime\/migration-factory-summary\.json",JSON\.stringify\(summary,null,2\)+"[\\s\\n]*"\);/s, 'fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"\\n");');
+          s = s.replace(/fs\.writeFileSync\("\.runtime\/migration-factory-summary\.json",JSON\.stringify\(summary,null,2\)+"[\s\n]*"\);/s, 'fs.writeFileSync(".runtime/migration-factory-summary.json",JSON.stringify(summary,null,2)+"\\n");');
           fs.writeFileSync(path, s);
           NODE
-          files="$(git diff --name-only origin/main...HEAD -- '*.yml' '*.yaml' '*.md' '*.json' '*.js' '*.mjs' '*.ts' '*.tsx' | grep -v '^\.github/workflows/_tmp-' | tr '\n' ' ')"
+          files="$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.yml' '*.yaml' '*.md' '*.json' '*.js' '*.mjs' '*.ts' '*.tsx' | grep -v '^\.github/workflows/_tmp-' | tr '\n' ' ')"
           if [ -n "$files" ]; then
             npx --yes prettier --write $files
           fi
           python -m pip install --disable-pip-version-check ruff==0.16.9
-          pyfiles="$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')"
+          pyfiles="$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')"
           if [ -n "$pyfiles" ]; then
             ruff format $pyfiles
           fi
@@ -44,4 +44,5 @@ jobs:
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "style: normalize automation workflow and tests"
-          git push
+          git pull --rebase origin fix/session-independent-automation-2026-10-03
+          git push --force-with-lease origin HEAD:fix/session-independent-automation-2026-10-03
