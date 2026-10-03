@@ -1,6 +1,37 @@
 name: Chatbot post-release CrossFire
 
 on:
+  workflow_call:
+    inputs:
+      operations_ref:
+        description: "Optional immutable Operations revision"
+        required: false
+        type: string
+    secrets:
+      OPERATIONS_APP_ID:
+        required: true
+      OPERATIONS_APP_PRIVATE_KEY:
+        required: true
+      PROVIDER_KEYS_JSON:
+        required: false
+      OPENROUTER_API_KEY:
+        required: false
+      GROQ_API_KEY:
+        required: false
+      GEMINI_API_KEY:
+        required: false
+      CEREBRAS_API_KEY:
+        required: false
+      NVIDIA_NIM_API_KEY:
+        required: false
+      COHERE_API_KEY:
+        required: false
+      HF_TOKEN:
+        required: false
+      SILICONFLOW_API_KEY:
+        required: false
+      AUTH_TOKEN:
+        required: false
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -13,8 +44,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: chatbot-post-release-crossfire
-  cancel-in-progress: true
+  group: chatbot-post-release-crossfire-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   crossfire:
@@ -28,7 +59,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Mint read-only Operations App token
         id: operations-token
@@ -68,6 +99,13 @@ jobs:
           path: ${{ runner.temp }}/operations
           persist-credentials: false
 
+      - name: Install pinned Operations runtime
+        working-directory: ${{ runner.temp }}/operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e .
+
       - name: Validate six-lane CrossFire contract
         working-directory: ${{ runner.temp }}/operations
         run: |
@@ -85,6 +123,14 @@ jobs:
       - name: Run up-to-six-provider AI CrossFire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
         run: |
           set +e

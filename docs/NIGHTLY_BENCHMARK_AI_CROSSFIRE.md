@@ -2,41 +2,66 @@
 
 ## Purpose
 
-The canonical autonomous benchmark remains deterministic and authoritative. This workflow adds a separate six-lane AI cross-fire that observes the benchmark receipt and produces advisory diagnostics.
+The canonical autonomous benchmark remains deterministic and authoritative. This workflow adds a separate six-model AI cross-fire that observes the benchmark receipt and produces advisory diagnostics.
 
 ## Execution
 
-The cross-fire runs nightly after the benchmark window and may also be started manually with a completed benchmark run ID. Six Workers AI models receive the same bounded evidence payload in parallel:
+GitHub Actions checks out the current Foundation revision, resolves the latest successful autonomous benchmark run on `main`, and sends a bounded evidence envelope to the canonical public front door at `https://heroic-ai.pages.dev/api/v1/benchmark/ai-crossfire`.
 
-- `@cf/meta/llama-3.2-1b-instruct`
-- `@cf/meta/llama-3.2-3b-instruct`
-- `@cf/ibm-granite/granite-4.0-h-micro`
-- `@cf/qwen/qwen2.5-coder-32b-instruct`
-- `@cf/meta/llama-3.1-8b-instruct-fp8`
-- `@cf/mistral/mistral-7b-instruct-v0.2-lora`
+The authenticated Operations runtime fans the request out across six current Workers AI models in parallel through the native AI binding:
 
-The lanes are independent and use a maximum parallelism of six. The aggregate is deterministic: it records transport success, schema compliance, latency, reported neurons, advisory assessment, flags, and agreement.
+- `@cf/zai-org/glm-4.7-flash`
+- `@cf/google/gemma-4-26b-a4b-it`
+- `@cf/nvidia/nemotron-3-120b-a12b`
+- `@cf/openai/gpt-oss-20b`
+- `@cf/openai/gpt-oss-120b`
+- `@cf/qwen/qwen3.8-27b`
+
+The workflow sends no Cloudflare API token. GitHub supplies only the existing application authentication token and bounded benchmark evidence. Cloudflare performs model execution internally through the native Workers AI binding.
+
+Each model lane uses deterministic temperature, a 192-token output limit, and thinking disabled. Operations returns one bounded aggregate containing all six lane receipts.
+
+## Provenance and deployment-pin protection
+
+Automatic benchmark selection is restricted to successful `autonomous-benchmark` runs on the `main` branch. Manual run IDs are independently revalidated as completed successful main-branch benchmark runs.
+
+Foundation reads the production Operations SHA from `docs/OPERATIONS_PIN_MANIFEST.json` and includes it in the cross-fire request. Operations reports its deployed `RELEASE_OPERATIONS_REF`, and GitHub fails closed if the live runtime pin differs from the expected production pin.
+
+## Coverage and quality gates
+
+The aggregate requires exactly six distinct model receipts. It fails closed when a lane is missing, duplicated, transport-failed, or schema-invalid.
+
+GitHub verifies:
+
+- expected and observed model count are both 6;
+- all 6 transports succeeded;
+- all 6 advisories comply with the exact schema;
+- `coverage_complete == true`;
+- `quality_complete == true`;
+- the deployed Operations revision matches the Foundation production pin manifest.
 
 ## Evidence boundary
 
-Only the deterministic final benchmark receipt is sent to the AI lanes. The workflow does not execute downloaded artifacts, check out untrusted artifact code, dispatch another workflow, mutate GitHub, mutate Cloudflare, modify credentials or policy, or certify production/research completion.
+Only the deterministic final benchmark receipt is sent to the AI lanes. The cross-fire does not execute downloaded artifacts, mutate GitHub, mutate Cloudflare configuration, modify credentials or policy, dispatch workflows, or certify production/research completion.
 
-Every receipt contains a SHA-256 digest of the bounded AI input and an explicit advisory-only authority marker.
+Every aggregate carries an evidence SHA-256 and the authority marker `advisory_only_no_acceptance_or_mutation_authority`.
 
-AI output is invalid when it does not satisfy the required structured advisory schema. Generation success and schema compliance are recorded separately.
+## Live validation
 
-## Cost and runtime boundary
+A six-way parallel Cloudflare connector cross-fire executed 54 calls: six models × three task contracts × three repeats. All 54 transports succeeded and all 54 exact-output quality checks passed, using 209.575 reported Neurons.
 
-The live provider contract remains governed by the existing strict-zero-cost runtime policy. This workflow does not bypass provider selection or billing policy. A model/API failure becomes an unavailable advisory observation rather than a benchmark acceptance failure.
+A focused nine-call GPT-OSS 120B rerun also passed 9/9.
 
-The benchmark itself remains responsible for its existing deterministic gates, including exact revision/provenance and truthful handling of missing or failed evidence.
+A real GitHub Actions cross-repo regression then minted the read-only Operations App token, checked out the private Operations branch, installed its Workers runtime dependencies, and completed the cross-fire regression test successfully in run `37104924105`.
 
-## Live validation performed
+## Known production promotion boundary
 
-A direct Cloudflare API cross-fire was executed independently before this workflow was proposed. The six selected models all returned successful API responses through the universal Workers AI endpoint. A separate logical evidence test confirmed that model responses can differ in formatting even when they receive identical facts; therefore the workflow measures strict schema compliance rather than treating any generated text as valid evidence.
+The new Operations endpoint is not considered live until Operations PR #1566 is promoted through the repository's controlled production release and pin process. The live production Operations worker remains on its current immutable pin until that promotion is executed.
 
-The live test is supplemental runtime evidence. It does not close the 24-program nightly research acceptance issue.
+## Cost and authority
 
-## Relationship to the six-lane benchmark
+Cloudflare currently documents a 10,000-Neuron daily Workers AI Free allocation. The cross-fire is bounded and records reported Neuron usage. AI agreement never becomes correctness, production-health, or research-completion authority.
 
-The project-native benchmark already defines six analytical lanes and three repeats per task, with parallelism, adversarial testing, provenance, and hard-gate requirements. This cross-fire is an additional observation layer over those deterministic results; it does not replace the benchmark contract.
+## Relationship to the canonical benchmark
+
+The project-native deterministic benchmark remains authoritative. AI cross-fire is a diagnostic/advisory layer over its receipt and does not replace the 24-program nightly research execution or its acceptance gates.
