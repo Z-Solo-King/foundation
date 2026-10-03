@@ -36,6 +36,19 @@ jobs:
           python-version: "3.14"
       - name: Install pinned hygiene tools
         run: python -m pip install --disable-pip-version-check ruff==0.16.9
+      - name: Emit canonical Prettier formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/prettier-normalized"
+          mkdir -p "$out"
+          cp .github/workflows/nightly-ai-research-20jobs.yml "$out/nightly-ai-research-20jobs.yml"
+          cp scripts/family_integrity_check.js "$out/family_integrity_check.js"
+          npx --yes prettier@3.9.9 --write "$out/nightly-ai-research-20jobs.yml" "$out/family_integrity_check.js"
+          echo "=== PRETTIER: nightly-ai-research-20jobs.yml ==="
+          cat "$out/nightly-ai-research-20jobs.yml"
+          echo "=== PRETTIER: family_integrity_check.js ==="
+          cat "$out/family_integrity_check.js"
       - name: Run strict changed-file hygiene gate
         shell: bash
         run: |
