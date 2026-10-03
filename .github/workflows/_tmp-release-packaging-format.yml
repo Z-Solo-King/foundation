@@ -13,28 +13,21 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: true
-      - name: Repair shell and Ruff formatting
+      - name: Repair remaining workflow-policy lint
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check ruff==0.16.9
-          ruff format tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py
           ruff check --fix tests/test_workflow_policy.py
-          python - <<'PY'
-          from pathlib import Path
-          p = Path("scripts/production_release.sh")
-          value = p.read_text(encoding="utf-8")
-          if not value.endswith("\n"):
-              p.write_text(value + "\n", encoding="utf-8")
-          PY
+          ruff format tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py
       - name: Remove formatter and publish
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .github/workflows/_tmp-release-packaging-format.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f .github/workflows/_tmp-release-packaging-format.yml
-          git add scripts/production_release.sh tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py .github/workflows/_tmp-release-packaging-format.yml
+          git add tests/test_workflow_policy.py tests/test_production_release_boundary_policy.py .github/workflows/_tmp-release-packaging-format.yml
           git diff --cached --quiet && exit 0
-          git commit -m "style: normalize release packaging validation"
+          git commit -m "style: finalize workflow policy formatting"
           git push
