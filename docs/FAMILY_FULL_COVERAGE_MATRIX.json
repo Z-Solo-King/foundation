@@ -298,6 +298,46 @@
       [
         "GEMINI.md",
         "developer_tooling"
+      ],
+      [
+        ".editorconfig",
+        "repository_configuration"
+      ],
+      [
+        ".gitattributes",
+        "repository_configuration"
+      ],
+      [
+        ".markdownlint.json",
+        "repository_configuration"
+      ],
+      [
+        ".prettierignore",
+        "repository_configuration"
+      ],
+      [
+        ".prettierrc.json",
+        "repository_configuration"
+      ],
+      [
+        "backend/",
+        "backend_intelligence_api"
+      ],
+      [
+        "foundation_worker.py",
+        "cloudflare_runtime"
+      ],
+      [
+        "migrations/",
+        "persistence_d1"
+      ],
+      [
+        "worker.py",
+        "cloudflare_runtime"
+      ],
+      [
+        "wrangler.foundation-core.toml",
+        "cloudflare_runtime"
       ]
     ]
   },
@@ -350,7 +390,7 @@
         ],
         [
           "operations",
-          "extractor_mapper/observation_contract.py"
+          "extractor_mapper/contracts.py"
         ],
         [
           "operations",
@@ -560,7 +600,7 @@
         ],
         [
           "operations",
-          "private/dashboard_b2.py"
+          "private/control_plane_infrastructure.py"
         ]
       ]
     },
@@ -620,7 +660,7 @@
         ],
         [
           "operations",
-          "tests/test_research_artifacts.py"
+          "tests/test_artifact_manifest.py"
         ]
       ]
     },
