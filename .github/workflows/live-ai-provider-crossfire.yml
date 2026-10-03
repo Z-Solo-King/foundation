@@ -102,6 +102,51 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set +e
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          specs = {x["id"]: x for x in json.loads(Path("private/chatbot/provider_transport_catalog.json").read_text())["providers"]}
+          raw = os.environ.get("PROVIDER_KEYS_JSON", "").strip()
+          try:
+              payload = json.loads(raw) if raw else {}
+          except json.JSONDecodeError:
+              payload = {}
+              print("PROVIDER_KEYS_JSON parse: INVALID")
+          if not isinstance(payload, dict):
+              payload = {}
+          env_keys = {
+              "openrouter_free":"OPENROUTER_API_KEY","groq":"GROQ_API_KEY","gemini":"GEMINI_API_KEY",
+              "cerebras":"CEREBRAS_API_KEY","nvidia_nim":"NVIDIA_NIM_API_KEY","cohere_free":"COHERE_API_KEY",
+              "huggingface_free":"HF_TOKEN","siliconflow":"SILICONFLOW_API_KEY"
+          }
+          admitted=set()
+          for name,value in sorted(payload.items()):
+              spec=specs.get(name)
+              if not spec or not isinstance(value,dict):
+                  print(name + ": REJECT unknown_or_invalid_shape")
+                  continue
+              if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
+                  print(name + ": REJECT missing_endpoint_model_or_key")
+                  continue
+              if value.get("zero_cost") is False:
+                  print(name + ": REJECT zero_cost_false")
+                  continue
+              if value.get("endpoint") != spec["endpoint"]:
+                  print(name + ": REJECT endpoint_mismatch")
+                  continue
+              if value.get("model") != spec["model"]:
+                  print(name + ": REJECT model_mismatch")
+                  continue
+              admitted.add(name)
+              print(name + ": ADMITTED_FROM_JSON")
+          for name,key in env_keys.items():
+              present=bool(os.environ.get(key,"").strip())
+              print(name + ": direct_env=" + ("PRESENT" if present else "EMPTY"))
+              if present:
+                  admitted.add(name)
+          print("ADMITTED_PROVIDER_NAMES:", sorted(admitted))
+          print("ADMITTED_PROVIDER_COUNT:", len(admitted))
+          PY
           mkdir -p .runtime/live-ai-crossfire
           python benchmark/ai_provider_crossfire.py --providers-max 6 --repeats 3 --workers 12 --output .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/runner.log 2>&1
           status=$?
