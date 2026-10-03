@@ -1,3 +1,4 @@
+// prettier-ignore
 (() => {
   'use strict';
 
@@ -243,7 +244,6 @@
     return false;
   }
 
-  // prettier-ignore
   async function submitChat(text, chatId = api.state.activeChatId) {
     const activeChatId = chatId || api.ensureChat().id;
     if (api.state.guestTestMode) return submitGuestTestChat(text, activeChatId);
