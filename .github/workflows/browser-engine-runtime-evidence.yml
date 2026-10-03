@@ -10,6 +10,11 @@ on:
         required: false
         default: "b2f6b9d092a50d46c601bf31f52e012e6b5023a2"
         type: string
+      target_url:
+        description: "Public Heroic AI page to exercise through each real browser engine"
+        required: false
+        default: "https://heroic-ai.pages.dev/"
+        type: string
 
 permissions:
   contents: read
@@ -53,7 +58,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: "3.14"
 
       - name: Install browser adapter
         working-directory: operations
@@ -67,7 +72,9 @@ jobs:
 
       - name: Run real browser-engine smoke
         working-directory: operations
-        run: python scripts/browser_engine_smoke.py --engine ${{ matrix.engine }} --url https://example.com/ | tee browser-engine-receipt.json
+        env:
+          TARGET_URL: ${{ inputs.target_url || 'https://heroic-ai.pages.dev/' }}
+        run: python scripts/browser_engine_smoke.py --engine ${{ matrix.engine }} --url "$TARGET_URL" | tee browser-engine-receipt.json
 
       - name: Upload engine receipt
         if: always()
