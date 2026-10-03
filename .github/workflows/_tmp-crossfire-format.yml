@@ -1,4 +1,5 @@
 name: Temporary format repair for current CrossFire PR
+# trigger formatting run
 
 on:
   push:
