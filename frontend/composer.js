@@ -79,6 +79,11 @@
   function send() {
     const text = prompt?.value.trim() || '';
     if (!text) return;
+    if (api.state.mode === 'research' && !api.token()) {
+      setStatus('Session token required for Research. Open Settings to continue.', 'error');
+      api.chatView?.toast('Session token required. Open Settings to continue.');
+      return;
+    }
     prompt.value = '';
     resize();
     document.dispatchEvent(new CustomEvent('rie:composer-send', { detail: { text, mode: api.state.mode } }));
@@ -86,6 +91,11 @@
 
   function queue() {
     if (api.state.mode !== 'research' || queueButton?.disabled) return;
+    if (!api.token()) {
+      setStatus('Session token required for Research. Queued work was not created.', 'error');
+      api.chatView?.toast('Session token required before queueing Research.');
+      return;
+    }
     const text = prompt?.value.trim() || '';
     if (!text) return;
     prompt.value = '';

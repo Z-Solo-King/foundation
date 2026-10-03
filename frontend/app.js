@@ -247,6 +247,15 @@
     const activeChatId = chatId || api.ensureChat().id;
     if (api.state.guestTestMode) return submitGuestTestChat(text, activeChatId);
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
+    if (!api.token()) {
+      api.chatView.toast('Session token required. Open Settings to continue.');
+      return {
+        ok: false,
+        request_id: null,
+        chat_id: activeChatId,
+        response: { status: 'auth_required', result_state: 'UNKNOWN' },
+      };
+    }
     const requestId = api.uuid();
     const abortController = new AbortController();
     activeChatAbortController = abortController;
