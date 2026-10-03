@@ -156,7 +156,8 @@
       "workflows": [
         "provider-fleet-runtime-state.yml",
         "live-ai-agent-benchmark.yml",
-        "operations-centralized-validation.yml"
+        "operations-centralized-validation.yml",
+        "live-ai-provider-crossfire.yml"
       ],
       "ai_task_families": [
         "action_plan",
