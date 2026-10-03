@@ -20,7 +20,12 @@ def test_current_repo_hygiene_report_is_clean() -> None:
 
 def test_hygiene_tool_defines_core_byte_rules() -> None:
     text = HYGIENE_TOOL.read_text(encoding="utf-8")
-    for marker in ("lf-only", "final-newline", "trailing-whitespace", "tracked-artifact"):
+    for marker in (
+        "lf-only",
+        "final-newline",
+        "trailing-whitespace",
+        "tracked-artifact",
+    ):
         assert marker in text
 
 

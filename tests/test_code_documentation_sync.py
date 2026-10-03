@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import subprocess
 from pathlib import Path
@@ -32,6 +30,6 @@ def test_current_map_integrity_uses_canonical_node_tool() -> None:
 
 def test_sync_tool_uses_recursive_glob_matching() -> None:
     text = SYNC_TOOL.read_text(encoding="utf-8")
-    assert "endsWith(\"/**\")" in text
+    assert 'endsWith("/**")' in text
     assert "matches(p, pattern)" in text
     assert "sync-exemption-reason-required" in text

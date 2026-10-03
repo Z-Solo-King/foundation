@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Validate the public Foundation/Operations family contract without private imports."""
 
 from __future__ import annotations
@@ -85,7 +84,7 @@ class DriftReport:
 def load(path: Path) -> dict[str, object]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
-        raise ValueError(f"{path} must contain a JSON object")
+        raise TypeError(f"{path} must contain a JSON object")
     return value
 
 

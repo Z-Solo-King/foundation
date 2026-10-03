@@ -30,4 +30,4 @@ def test_research_proxy_uses_bounded_retry_and_explicit_proof_headers() -> None:
 def test_research_proxy_requires_model_generated_provider_proof() -> None:
     text = PROXY.read_text(encoding="utf-8")
     assert 'response.generation_status !== "model_generated"' in text
-    assert 'upstream_worker_rejected' in text
+    assert "upstream_worker_rejected" in text

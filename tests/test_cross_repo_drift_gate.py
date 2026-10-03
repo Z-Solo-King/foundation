@@ -44,16 +44,25 @@ def test_active_family_catalogs_are_compatible():
         ("family", lambda value: value | {"family": "wrong-family"}),
         ("foundation-role", lambda value: {**value, "role": "protected-authority"}),
         ("operations-authority", lambda value: {**value, "promotion_authority": False}),
-        ("family-contract-version", lambda value: {**value, "family_contract_version": "2"}),
-        ("resource-owner", lambda value: {**value, "resource_governance": "foundation"}),
+        (
+            "family-contract-version",
+            lambda value: {**value, "family_contract_version": "2"},
+        ),
+        (
+            "resource-owner",
+            lambda value: {**value, "resource_governance": "foundation"},
+        ),
     ],
 )
 def test_boundary_drift_fails_closed(name, change):
     left = foundation()
     right = operations()
-    if name == "family":
-        left = change(left)
-    elif name == "foundation-role" or name == "family-contract-version" or name == "resource-owner":
+    if name in {
+        "family",
+        "foundation-role",
+        "family-contract-version",
+        "resource-owner",
+    }:
         left = change(left)
     else:
         right = change(right)
