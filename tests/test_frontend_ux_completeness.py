@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,8 +62,8 @@ def test_ux_bootstrap_is_parse_safe_and_event_driven():
 
 def test_chat_submit_creates_first_chat_when_none_is_active():
     text = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
-    assert "const activeChatId = chatId || api.ensureChat().id;" in text
-    assert "chat_id: activeChatId" in text
+    assert re.search(r"const activeChatId = chatId \\|\\| api\\.ensureChat\\(\\)\\.id;", text)
+    assert text.count("chat_id: activeChatId") >= 2
     assert text.count("detail: { chatId: activeChatId, requestId, body }") == 1
     assert text.count("detail: { chatId, requestId, body }") == 1
     assert (
