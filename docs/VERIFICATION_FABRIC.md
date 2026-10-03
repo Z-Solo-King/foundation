@@ -79,7 +79,6 @@ The cross-fire is intentionally outside the benchmark acceptance gate. AI output
 
 The cross-fire is an observability and reasoning layer over the canonical benchmark: deterministic benchmark evidence remains authoritative, while AI disagreement and repeated flags can identify candidates for follow-up reproduction, regression coverage, or future benchmark design.
 
-
 ## Session-independent execution boundary — 2026-10-03
 
 Durable engineering missions and benchmarks are hosted execution. GitHub Actions schedules, trusted-main pushes, and explicit workflow dispatch own triggering and execution; artifacts and workflow-run IDs own cross-job/run handoff. ChatGPT/mobile conversation state, an interactive agent lifetime, or connector availability is not an execution dependency.
