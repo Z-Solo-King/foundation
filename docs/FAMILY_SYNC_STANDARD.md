@@ -279,7 +279,6 @@ The repository now has a machine-enforced microscopic deduplication standard: sh
 The CI repair also preserves the existing cross-repository authority model. The Foundation contract-drift workflow obtains a read-only Operations token using the canonical GitHub App token action, while the single live Operations feed workflow remains an explicitly classified exception rather than an undocumented private-runtime workflow.
 
 The nightly AI CrossFire remains advisory-only. Its existing Operations implementation executes six Workers AI models in parallel and emits schema, transport, latency, neuron, consensus, and provenance evidence; it does not acquire mutation or promotion authority.
-\n
 
 ## Post-merge CI boundary reconciliation — 2026-10-03
 
@@ -294,4 +293,3 @@ The Migration Factory CrossFire now preserves its hidden runtime reports during 
 The centralized Operations validation workflow treats the live custom website product-feed workflow as the sole sanctioned Operations workflow exception. Private runtime workflows remain governed by the Foundation authority boundary.
 
 The nightly multi-agent research workflow installs the private research runner's HTTP client dependency before execution. This repairs the live runner dependency boundary without weakening the production gate or treating deterministic dry-run output as real research evidence.
-
