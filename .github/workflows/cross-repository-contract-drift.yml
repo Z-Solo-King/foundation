@@ -161,7 +161,7 @@ jobs:
             --foundation CAPABILITIES.json \
             --operations ../operations/CAPABILITIES.json
           if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            python tools/check_repo_overlap.py . ../operations/repo --exhaustive
+            python ../operations/repo/tools/check_repo_overlap.py . ../operations/repo --exhaustive
           else
-            python tools/check_repo_overlap.py . ../operations/repo
+            python ../operations/repo/tools/check_repo_overlap.py . ../operations/repo
           fi
