@@ -12,7 +12,10 @@ import { planVerification, scanFoundation } from "./verification_fabric.mjs";
 const owner = process.env.GITHUB_REPOSITORY?.split("/")[0];
 const repo = process.env.GITHUB_REPOSITORY?.split("/")[1];
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-const workerUrl = (process.env.PUBLIC_WORKER_URL || "https://heroic-ai.pages.dev").replace(/\/$/, "");
+const workerUrl = (process.env.PUBLIC_WORKER_URL || "https://heroic-ai.pages.dev").replace(
+  /\/$/,
+  "",
+);
 const dryRun = process.env.DRY_RUN === "true";
 const maxCycles = Number(process.env.MAX_PLANNING_CYCLES || 6);
 const maxWorkflowAttempts = Number(process.env.MAX_WORKFLOW_ATTEMPTS || 3);
