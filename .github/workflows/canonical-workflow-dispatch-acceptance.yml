@@ -74,3 +74,22 @@ jobs:
           name: workflow-dispatch-bridge-receipt
           path: .runtime/workflow-dispatch-bridge-receipt.json
           if-no-files-found: error
+
+  controlled-production-reconcile:
+    name: One-shot production reconcile bridge
+    if: ${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: controlled production reconcile') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch canonical production release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dispatch_output="$(gh workflow run heroic-ai-production-release.yml --repo "$GITHUB_REPOSITORY" --ref main 2>&1)"
+          printf '%s\n' "$dispatch_output"
+          run_url="$(printf '%s\n' "$dispatch_output" | grep -Eo 'https://[^[:space:]]+/actions/runs/[0-9]+' | tail -n1 || true)"
+          run_id="$(printf '%s\n' "$run_url" | sed -n 's#.*/runs/\([0-9][0-9]*\).*#\1#p')"
+          test -n "$run_id"
+          echo "Canonical production release dispatched: run_id=$run_id"
