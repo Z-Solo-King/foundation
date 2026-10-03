@@ -1,6 +1,10 @@
 name: Live AI provider cross-fire benchmark
+run-name: Live AI provider cross-fire — ${{ github.event_name }}
 
 on:
+  schedule:
+    # 22:00 IST target; GitHub may delay scheduled runs during load.
+    - cron: "30 16 * * *"
   workflow_dispatch:
     inputs:
       operations_ref:
@@ -14,7 +18,7 @@ permissions:
 
 concurrency:
   group: live-ai-provider-crossfire
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   crossfire:
