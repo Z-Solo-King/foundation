@@ -61,3 +61,8 @@ PY
       - name: Emit reproducible performance workload report
         working-directory: operations
         run: python -m benchmark.performance_workloads
+      - name: Validate generated performance report
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python -m benchmark.performance_workloads --help >/dev/null
