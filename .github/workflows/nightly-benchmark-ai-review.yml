@@ -1,0 +1,85 @@
+name: Nightly benchmark AI advisory review
+on:
+  workflow_run:
+    workflows: ["autonomous benchmark"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Completed autonomous benchmark run ID
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: nightly-benchmark-ai-review
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PUBLIC_WORKER_URL: https://ai-cio.pages.dev
+      AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: run
+        env:
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          MANUAL_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          id="${MANUAL_RUN_ID:-${EVENT_RUN_ID:-}}"
+          test -n "$id"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - name: Download evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.run.outputs.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/ai-review-input
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n autonomous-nightly-benchmark-final -D .runtime/ai-review-input/final
+          for n in 0 1 2 3; do gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n "autonomous-benchmark-summary-shard-$n" -D ".runtime/ai-review-input/shard-$n" || true; done
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n latest-research-feed -D .runtime/ai-review-input/research || true
+      - name: AI advisory review
+        env:
+          RUN_ID: ${{ steps.run.outputs.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime/ai-review
+          final=$(jq "{schema,finalization_status,research_feed_state,benchmark_job_result,research_feed_job_result,shards_found,selected_targets,total_observations,usable_observations,operational_failures,operational_failure_rate,validation_errors}" .runtime/ai-review-input/final/autonomous-nightly-benchmark-final.json)
+          shards="[]"
+          for f in .runtime/ai-review-input/shard-*/*/benchmark-summary.json .runtime/ai-review-input/shard-*/benchmark-summary.json; do
+            test -f "$f" || continue
+            row=$(jq "{schema,shard,selected_targets,total_observations,error_rate,operational_failure_rate,usable_observation_rate,failure_counts,measurement_gaps}" "$f")
+            shards=$(jq -cn --argjson a "$shards" --argjson b "$row" '$a + [$b]')
+          done
+          payload=$(jq -cn --argjson f "$final" --argjson s "$shards" '{schema:"nightly-benchmark-ai-input/v1",final:$f,shards:$s}')
+          test "${#payload}" -le 12000
+          rid="nightly-benchmark-ai-review:$RUN_ID"
+          prompt=$(jq -cn --arg p "NIGHTLY_BENCHMARK_AI_REVIEW_V1
+Return JSON only. Advisory only; do not claim correctness or production/research completion. Do not propose credential, policy, deployment, Cloudflare mutation, or workflow-dispatch actions. Required keys: assessment, observations, improvement_candidates, next_run_focus." --arg d "$payload" '$p + "
+" + $d')
+          body=$(jq -cn --arg id "$rid" --arg m "$prompt" '{chat_id:$id,request_id:$id,message:$m,mode:"chat",operation:"knowledge",task_family:"audit_assist",strict_zero_cost_only:true,require_model_generation:true}')
+          response=$(curl -fsS --max-time 90 -H "Authorization: Bearer $AUTH_TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $rid" -d "$body" "$PUBLIC_WORKER_URL/api/v1/chat" || true)
+          digest=$(printf %s "$payload" | sha256sum | cut -d" " -f1)
+          out=$(jq -n --arg rid "$RUN_ID" --arg digest "$digest" '{schema:"nightly-benchmark-ai-review/v1",status:"unavailable",assessment:"attention",authority:"advisory_only_no_acceptance_or_mutation_authority",observations:[],improvement_candidates:[],next_run_focus:[],run_id:$rid,input_sha256:$digest}')
+          if test -n "$response"; then
+            text=$(jq -r ".response.text // .response // .text // .answer // empty" <<<"$response")
+            if jq -e 'type=="object" and (.assessment|IN("pass","attention","blocked"))' >/dev/null 2>&1 <<<"$text"; then
+              out=$(jq --argjson model "$text" --arg provider "$(jq -r ".response.provider // .provider // \"unknown\"" <<<"$response")" '.status="available" | .assessment=$model.assessment | .observations=($model.observations[:8]) | .improvement_candidates=($model.improvement_candidates[:8]) | .next_run_focus=($model.next_run_focus[:8]) | .provider=$provider' <<<"$out")
+            fi
+          fi
+          printf "%s
+" "$out" > .runtime/ai-review/nightly-benchmark-ai-review.json
+      - if: always()
+        run: cat .runtime/ai-review/nightly-benchmark-ai-review.json >> "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.1
+        with:
+          name: nightly-benchmark-ai-review
+          path: .runtime/ai-review
+          retention-days: 30
+          if-no-files-found: warn
