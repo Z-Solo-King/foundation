@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Foundation research adapter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Resolve production Operations pin
-        # Immutable candidate anchor: 27bbce915f30751e32096de75905a2919f232d93
+        # Immutable candidate anchor: 609cd09552e0de82f5c9169ca7a766eb1c6b9b94
         id: operations
         shell: bash
         run: |

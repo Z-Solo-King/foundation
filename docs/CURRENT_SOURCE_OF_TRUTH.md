@@ -235,9 +235,9 @@ The Operations hosted-Actions boundary is reconciled: Operations `main` contains
 
 ## 2026-10-04 post-runtime-promotion continuity reconciliation
 
-Foundation main is now `8071e1f79065fae613783d11cc801aff2b827333`. Operations main is now `27bbce915f30751e32096de75905a2919f232d93`. These are live moving repository heads, not production certification values.
+Foundation main is now `8071e1f79065fae613783d11cc801aff2b827333`. Operations main is now `609cd09552e0de82f5c9169ca7a766eb1c6b9b94`. These are live moving repository heads, not production certification values.
 
-Foundation PR #1934 was merged after exact-head Public tests, Analyze python, CodeQL, security, hygiene, provenance, and governance checks all succeeded. The canonical Operations production candidate staged by that release-path change is now `27bbce915f30751e32096de75905a2919f232d93`; the separately observed Cloudflare production runtime remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the controlled production release transaction completes.
+Foundation PR #1934 was merged after exact-head Public tests, Analyze python, CodeQL, security, hygiene, provenance, and governance checks all succeeded. The canonical Operations production candidate staged by that release-path change is now `609cd09552e0de82f5c9169ca7a766eb1c6b9b94`; the separately observed Cloudflare production runtime remains `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f` until the controlled production release transaction completes.
 
 The native feed provenance hardening is already present on Foundation main. Foundation and Operations currently have no open pull requests. The live acceptance queue remains Foundation #58, #157, #1249 plus Operations #603; #1679 and #1906 remain separate integrity/autonomous execution state.
 
@@ -261,4 +261,4 @@ The certified Operations authorization assertion is aligned with `backend.worker
 
 ## 2026-10-04 final controlled production reconcile after audit correction
 
-Operations PR #1589 corrected the cross-repository audit tooling to match the current two-repository architecture and was promoted to the immutable production pin. Foundation PR #1954 synchronized all production/research pin consumers to `27bbce915f30751e32096de75905a2919f232d93`. This commit is the one-shot controlled production-release trigger; no deployment authority, provider credential set, or acceptance policy is changed by the trigger itself.
+Operations PR #1589 corrected the cross-repository audit tooling to match the current two-repository architecture and was promoted to the immutable production pin. Foundation PR #1954 synchronized all production/research pin consumers to `609cd09552e0de82f5c9169ca7a766eb1c6b9b94`. This commit is the one-shot controlled production-release trigger; no deployment authority, provider credential set, or acceptance policy is changed by the trigger itself.
