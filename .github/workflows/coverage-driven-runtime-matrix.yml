@@ -31,6 +31,7 @@ concurrency:
 jobs:
   scenario:
     name: ${{ matrix.id }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -302,7 +303,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && matrix.live_probe && inputs.run_live_probes == true
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          BASE_URL: https://ai-cio.pages.dev
+          BASE_URL: https://heroic-ai.pages.dev
         working-directory: operations
         shell: bash
         run: |
@@ -438,10 +439,10 @@ jobs:
 
   aggregate:
     name: Aggregate 20 orthogonal scenarios
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: scenario
-    if: always()
     steps:
       - name: Download scenario evidence
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4
