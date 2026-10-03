@@ -95,3 +95,4 @@ The canonical `.github/workflows/required-pr-checks.yml` remains the source of t
 
 Documentation-only continuity changes are not exempt from the protected merge rule: the required contexts must materialize and succeed on the exact PR head before merge. The repository ruleset remains the authority for this requirement.
 
+The protected required-status contexts remain `Public tests` and `Analyze python`; this document records their ownership but does not replace the repository ruleset.
