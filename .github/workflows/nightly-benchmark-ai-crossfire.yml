@@ -1,11 +1,5 @@
 name: Nightly benchmark AI cross-fire
 on:
-  push:
-    branches: ["fix/nightly-ai-crossfire-20261003"]
-    paths:
-      - ".github/workflows/nightly-benchmark-ai-crossfire.yml"
-  pull_request:
-    branches: ["main"]
   schedule:
     # 22:30 IST, after the 21:15 IST autonomous benchmark window.
     - cron: "0 17 * * *"
