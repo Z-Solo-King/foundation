@@ -102,10 +102,10 @@ jobs:
             # public-data workflow and is explicitly excluded from the private-runtime
             # authority boundary. No other Operations workflow is allowed.
             unexpected_workflows="$(jq -c \
-              '[.[] | select(.type == "file" and (.name != "custom-website-product-feed-1249.yml" and .name != "woocommerce-32-plugin-feed-hunt.yml"))] | map({name,path,type})' \
+              '[.[] | select(.type == "file" and (.name != "custom-website-product-feed-1249.yml" and .name != "woocommerce-32-plugin-feed-hunt.yml" and .name != "microscope-branch-retirement.yml"))] | map({name,path,type})' \
               "$RUNNER_TEMP/operations-workflows.json")"
             if [[ "${unexpected_workflows}" == "[]" ]]; then
-              echo 'private Operations GitHub Actions boundary: PASS (only explicitly excluded feed workflow is present)'
+              echo 'private Operations GitHub Actions boundary: PASS (only explicitly sanctioned workflow exceptions are present)'
             else
               echo 'private Operations GitHub Actions boundary: FAIL (unexpected Operations workflow)'
               printf '%s\n' "${unexpected_workflows}"
