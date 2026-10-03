@@ -1,5 +1,4 @@
 name: Nightly benchmark AI cross-fire
-
 on:
   workflow_run:
     workflows: ["autonomous benchmark"]
@@ -10,8 +9,6 @@ on:
         description: "Completed autonomous benchmark run ID to analyze"
         required: true
         type: string
-  push:
-    branches: ["feat/nightly-benchmark-ai-review-2026-10-03-v2"]
 
 permissions:
   actions: read
@@ -80,7 +77,7 @@ jobs:
           body=json.dumps({"model":os.environ["MODEL"],"input":{"messages":[{"role":"user","content":instruction}],"max_tokens":96,"temperature":0}}).encode()
           url="https://api.cloudflare.com/client/v4/accounts/"+os.environ["CLOUDFLARE_ACCOUNT_ID"]+"/ai/run"
           req=urllib.request.Request(url,data=body,headers={"Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],"Content-Type":"application/json"})
-          receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"] or "push-test","model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
+          receipt={"schema":"nightly-benchmark-ai-crossfire-result/v1","run_id":os.environ["RUN_ID"] or "manual-test","model":os.environ["MODEL"],"transport_ok":False,"elapsed_ms":None,"advisory_schema_compliant":False,"advisory_assessment":None,"reason":"","flags":[],"neurons":None,"input_sha256":hashlib.sha256(data.encode()).hexdigest(),"authority":"advisory_only_no_acceptance_or_mutation_authority"}
           started=time.time()
           try:
               with urllib.request.urlopen(req,timeout=90) as response: raw=json.loads(response.read())
