@@ -94,6 +94,7 @@ def test_nightly_ai_crossfire_keeps_production_pin_guard_in_request_path():
         in text
     )
 
+
 def test_common_provider_crossfire_accepts_manual_and_reusable_inputs():
     text = (ROOT / ".github/workflows/chatbot-post-release-crossfire.yml").read_text(
         encoding="utf-8"
