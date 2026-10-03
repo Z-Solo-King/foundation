@@ -224,3 +224,11 @@ The last fully verified branch inventory was 2,440 refs across Foundation and Op
 ## Cross-repository overlap validator — 2026-10-03
 
 The canonical cross-repository contract workflow invokes the overlap validator from the disposable Operations checkout. Foundation remains the workflow authority; Operations supplies the validator implementation used for exhaustive cross-repository overlap verification.
+
+## 2026-10-04 microscope retirement trigger reconciliation
+
+Foundation main is now `906da6a1664b36fa5c89d47300b2d179f69c8aca`; Operations main is now `621fc8aa536b60bbc6f9e686c4ce0a769d8cab56`. These are moving repository heads, not production certification values.
+
+The microscope retirement workflow is fail-closed on normal pushes: `push` runs an evidence-only scan with read-only permissions, while destructive branch deletion is available only through explicit `workflow_dispatch` with `execute=true`. The former push-message authorization marker is no longer an execution path.
+
+The Operations hosted-Actions boundary is reconciled: Operations `main` contains no `.github/workflows/` directory, leaving Foundation as the hosted Actions authority. A post-merge cross-repository drift run confirmed the Operations workflow directory returns HTTP 404.
