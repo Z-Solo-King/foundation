@@ -4,8 +4,8 @@
   "audited_at": "2026-10-02T12:50:00.000Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
-    "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
+    "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
+    "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -21,11 +21,7 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "workers": [
-      "heroic",
-      "operations-edge",
-      "operations"
-    ],
+    "workers": ["heroic", "operations-edge", "operations"],
     "workers_dev_subdomain": false,
     "legacy_worker": null,
     "queues": 0,
@@ -35,24 +31,14 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-02T12:01:07.106Z",
-    "open_issue_count": 5,
-    "foundation": [
-      58,
-      157,
-      1247,
-      1249
-    ],
-    "operations": [
-      603
-    ],
+    "observed_at": "2026-10-03T11:30:26Z",
+    "open_issue_count": 4,
+    "foundation": [58, 157, 1249],
+    "operations": [603],
     "operations_count": 1,
-    "total_open_issue_count": 5,
-    "all_open_issue_count": 7,
-    "excluded_open_issue_classes": [
-      "autonomous-mission",
-      "integrity"
-    ],
+    "total_open_issue_count": 4,
+    "all_open_issue_count": 11,
+    "excluded_open_issue_classes": ["autonomous-mission", "autonomous-improvement", "integrity"],
     "authority": "GitHub live issue API; acceptance queue excludes autonomous execution/improvement and integrity incident state; never a production certificate"
   },
   "evidence": {
@@ -127,8 +113,8 @@
     "checked_at": "2026-10-02T12:50:00.000Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
-      "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
+      "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
+      "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -144,15 +130,8 @@
     "operations_diagnostics_facade": "Operations private/control_plane_diagnostics.py",
     "operations_diagnostics_infrastructure": "Operations private/control_plane_infrastructure.py",
     "live_acceptance_queue": {
-      "foundation": [
-        58,
-        1247,
-        1249,
-        157
-      ],
-      "operations": [
-        603
-      ],
+      "foundation": [58, 1247, 1249, 157],
+      "operations": [603],
       "total": 5
     },
     "production_operations_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
@@ -164,15 +143,15 @@
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
-    "foundation": "f364a39d79ce30e8f1b63b67c623c41a898af320",
-    "operations": "43ccf7b4379863fa3a8112194d1b3c6b68181378"
+    "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
+    "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
   },
   "hosted_ci_authority": {
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
-    "operations_workflow_directory": "absent_after_reconciliation",
-    "operations_main": "5cf716b8c8d9be4691f2544f2799dfd95cc29d4a",
+    "operations_workflow_directory": "present_pending_authority_reconciliation",
+    "operations_main": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
@@ -185,9 +164,7 @@
     "capability_catalog": "docs/GITHUB_APP_CAPABILITY_CATALOG.json",
     "policy": "docs/GITHUB_APP_INTEGRATION_POLICY.json",
     "first_party_operations_app": {
-      "repository_scope": [
-        "Z-Solo-King/operations"
-      ],
+      "repository_scope": ["Z-Solo-King/operations"],
       "maximum_permissions": {
         "contents": "read"
       },
@@ -209,7 +186,13 @@
     "license_ip_gate": true,
     "single_authority_preserved": true
   },
-  "open_issue_count": 7,
+  "open_issue_count": 11,
+  "live_branch_inventory_2026_10_03": {
+    "foundation": 1400,
+    "operations": 1040,
+    "total": 2440,
+    "method": "live GitHub paginated branch enumeration; remote ref deletion is not exposed by the connected write surface"
+  },
   "system_integration": {
     "schema": "system-integration-receipt/v1",
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
@@ -249,16 +232,13 @@
     "workflow": ".github/workflows/operations-private-freeplan-guard.yml",
     "policy": "fail closed on Operations main drift from approved immutable production pin",
     "approved_production_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
-    "observed_main": "adc600221169cc4dadee0bdd7d68be30c58e6727",
+    "observed_main": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a",
     "observed_state": "DRIFT"
   },
   "ai_navigation": {
     "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
     "unified_map": "docs/AI_SYSTEM_MAP.json",
-    "detailed_maps": [
-      "docs/AI_PROJECT_MAP.json",
-      "operations/docs/AI_PROJECT_MAP.json"
-    ],
+    "detailed_maps": ["docs/AI_PROJECT_MAP.json", "operations/docs/AI_PROJECT_MAP.json"],
     "classification_axes": [
       "functional_plane",
       "execution_class",
@@ -288,15 +268,8 @@
       "total": 621
     },
     "method": "fail-closed retirement workflow; protected/default/active-PR/release-tag/live-reference and divergent refs retained; expected SHAs revalidated before deletion",
-    "merged_architecture_prs": [
-      "foundation#1848",
-      "operations#1528"
-    ],
-    "retirement_authorization_prs": [
-      "foundation#1852",
-      "foundation#1854",
-      "operations#1530"
-    ],
+    "merged_architecture_prs": ["foundation#1848", "operations#1528"],
+    "retirement_authorization_prs": ["foundation#1852", "foundation#1854", "operations#1530"],
     "redundant_pr_closed": "foundation#1855",
     "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs.",
     "total_branches": 2310,
