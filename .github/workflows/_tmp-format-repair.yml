@@ -18,7 +18,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main --depth=1
-          files="$(git diff --name-only origin/main...HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | tr '\n' ' ')"
+          files="$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | grep -v '^\.github/workflows/_tmp-' | tr '\n' ' ')"
           if [ -n "$files" ]; then
             npx --yes prettier --write $files
           fi
@@ -32,4 +32,5 @@ jobs:
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "style: normalize workflow formatting"
-          git push
+          git pull --rebase origin fix/workflow-regressions-current-main-2026-10-03
+          git push --force-with-lease origin HEAD:fix/workflow-regressions-current-main-2026-10-03
