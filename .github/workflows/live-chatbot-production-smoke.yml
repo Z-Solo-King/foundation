@@ -23,7 +23,6 @@ concurrency:
 
 env:
   PUBLIC_WORKER_URL: https://heroic-ai.pages.dev
-  OPERATIONS_REF: 11f592116d9ef57b6189bf8bf0ff0e95ec3d410f
   TARGET_FOUNDATION_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
@@ -31,6 +30,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Checkout Foundation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_FOUNDATION_SHA }}
+          fetch-depth: 1
+
+      - name: Resolve production Operations pin
+        # Immutable candidate anchor: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56
+        id: operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$(jq -er '.pins.production_runtime.sha' docs/OPERATIONS_PIN_MANIFEST.json)"
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Wait for deployed revision
         env:
           EXPECTED_FOUNDATION: ${{ env.TARGET_FOUNDATION_SHA }}
@@ -38,7 +52,7 @@ jobs:
           set -euo pipefail
           for _ in {1..24}; do
             status=$(curl -sS --max-time 20 -o /tmp/readiness.json -w '%{http_code}' "$PUBLIC_WORKER_URL/readiness" || true)
-            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "$OPERATIONS_REF" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' /tmp/readiness.json >/dev/null 2>&1; then
+            if [ "$status" = "200" ] && jq -e --arg f "$EXPECTED_FOUNDATION" --arg o "${{ steps.operations.outputs.ref }}" '.ready == true and .database == true and .release.foundation_sha == $f and .release.operations_ref == $o' /tmp/readiness.json >/dev/null 2>&1; then
               jq '{ready,database,release}' /tmp/readiness.json
               exit 0
             fi

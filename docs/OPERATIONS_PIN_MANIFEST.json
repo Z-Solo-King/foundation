@@ -1,12 +1,14 @@
 {
   "schema": "operations-pin-manifest/v1",
-  "generated_at": "2026-10-03",
+  "generated_at": "2026-10-04",
   "authority": "single public-safe immutable Operations revision manifest; runtime code remains authoritative",
   "pins": {
     "production_runtime": {
-      "sha": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f",
+      "sha": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56",
       "purpose": "Cloudflare Operations production runtime and Foundation public production release",
-      "status": "deployed production runtime pin observed in Cloudflare; Operations main remains a separate moving branch and fresh runtime certification remains separately evidenced"
+      "status": "candidate: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56; validated Operations main revision staged for controlled production promotion; live production remains separately certified until the release transaction completes",
+      "updated_at": "2026-10-04",
+      "source": "Z-Solo-King/operations main"
     },
     "provider_fleet_runtime": {
       "sha": "2a4a49d2c11bd9ff2b9290bc780eb0da97c73ecb",
@@ -31,5 +33,6 @@
     "mutable_refs_forbidden": true,
     "branch_or_tag_refs_forbidden": true,
     "purpose_scoped": true
-  }
+  },
+  "validation_note": "2026-10-04: production pin advanced only after immutable Operations main validation and live runtime evidence; required PR checks remain mandatory before merge."
 }
