@@ -1,11 +1,11 @@
 {
   "schema_version": "family-sync-state/v1",
   "status": "CURRENT",
-  "audited_at": "2026-10-03T13:00:00Z",
+  "audited_at": "2026-10-04T00:09:00+05:30",
   "public_safe": true,
   "live_main": {
-    "foundation": "3e96d60da48470005884e21a980f79218096d199",
-    "operations": "670e65ee168b64f34156623dea88549d7fa72a52"
+    "foundation": "906da6a1664b36fa5c89d47300b2d179f69c8aca",
+    "operations": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -151,7 +151,7 @@
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
     "operations_workflow_directory": "absent",
-    "operations_main": "670e65ee168b64f34156623dea88549d7fa72a52",
+    "operations_main": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
     "execution": "Foundation-hosted, Operations source at immutable commit",
@@ -279,5 +279,12 @@
     "canonical_workflow": "cross-repository-contract-drift.yml",
     "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
     "reason": "keeps continuity metadata synchronized with the canonical overlap-validator path change"
+  },
+  "continuity_refresh_2026_10_04": {
+    "canonical_workflow": ".github/workflows/microscope-branch-retirement.yml",
+    "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
+    "reason": "synchronize continuity metadata with the fail-closed microscope trigger hardening and live family heads",
+    "foundation_head": "906da6a1664b36fa5c89d47300b2d179f69c8aca",
+    "operations_head": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56"
   }
 }
