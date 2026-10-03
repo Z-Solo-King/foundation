@@ -13,6 +13,9 @@ def test_chat_ui_calls_canonical_chat_route_and_clears_pending_state():
     assert "/api/v1/chat" in app
     assert "Idempotency-Key" in app
     assert "pending: false" in app
+    assert "const activeChatId = chatId || api.ensureChat().id;" in app
+    assert "chat_id: activeChatId" in app
+    assert "history: conversationHistory(activeChatId)" in app
     assert "Request failed" in view
     assert "Heroic AI" in view
 
