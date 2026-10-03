@@ -94,7 +94,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           HEROIC_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
+          OPERATIONS_CROSSFIRE_RUNNER: >-
+            ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark
         run: |
           set +e
