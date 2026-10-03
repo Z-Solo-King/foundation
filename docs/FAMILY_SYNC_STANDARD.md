@@ -286,4 +286,3 @@ The nightly AI CrossFire remains advisory-only. Its existing Operations implemen
 Family-wide validation materializes the disposable Foundation public core into the Operations test checkout from the validated Foundation revision. This keeps Foundation as the sole owner while satisfying legacy Operations test fixtures that require the generated compatibility tree.
 
 Cross-repository language-fit generation runs with both repository roots on `PYTHONPATH`, allowing Operations compatibility imports to resolve the same Foundation public core without copying source ownership into Operations.
-
