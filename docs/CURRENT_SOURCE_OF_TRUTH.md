@@ -188,3 +188,14 @@ Repository hygiene and code-documentation synchronization remain machine-enforce
 ## Live reconciliation — 2026-10-02
 
 The canonical public front door is `https://heroic-ai.pages.dev`. The GitHub-backed Cloudflare Pages project `heroic-ai` serves the frontend and routes `/health`, `/readiness`, and `/api/*` through `HEROIC_BACKEND` to the production `heroic` Worker. The immutable production Operations runtime is revision `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`; Operations `main` remains the separate moving branch at `adc600221169cc4dadee0bdd7d68be30c58e6727`.
+
+## 2026-10-03 live continuity reconciliation
+
+Foundation main is now `919b02679846f3e64b190497a390a2d6e2f968f6` after the validated CI-boundary repair. Operations main is now `92d76decfb69030ba3c2a0d674d3584acc671823` after synchronizing the generated Foundation public core to the current Foundation revision and adding the required `quality_rules.json` contract.
+
+The current acceptance-track issues, read live from GitHub, are Foundation #58, #157, and #1249 plus Operations #603. Foundation autonomous-mission issues and the Operations #1679 integrity drift issue remain separate incident/execution state and are not folded into the acceptance queue.
+
+Cross-repository validation now materializes the canonical Foundation public core into Operations test jobs and uses both repository roots for language-fit generation. This preserves Foundation as the source of truth without vendoring duplicate source ownership in Operations.
+
+The live branch inventory remains 2,440 refs across the two repositories. Branch retirement remains fail-closed and evidence-gated; the connected API surface does not expose direct remote ref deletion, while the repository's explicit microscope-retirement workflow retains the authorization guard.
+
