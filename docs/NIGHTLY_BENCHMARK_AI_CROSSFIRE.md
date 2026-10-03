@@ -6,7 +6,7 @@ The canonical autonomous benchmark remains deterministic and authoritative. This
 
 ## Execution
 
-GitHub Actions checks out the current Foundation revision, resolves the latest successful autonomous benchmark run on `main`, and sends a bounded evidence envelope to the canonical public front door at `https://heroic-ai.pages.dev/api/v1/benchmark/ai-crossfire`.
+GitHub Actions runs the cross-fire from the `workflow_run` completion event of the canonical `autonomous benchmark` workflow, using that exact successful run ID and its final artifact. Manual dispatch may supply an explicit completed benchmark run ID. The workflow validates the artifact run ID and repository revision before sending a bounded evidence envelope to the canonical public front door at `https://heroic-ai.pages.dev/api/v1/benchmark/ai-crossfire`.
 
 The authenticated Operations runtime fans the request out across six current Workers AI models in parallel through the native AI binding:
 
@@ -23,7 +23,7 @@ Each model lane uses deterministic temperature, a 192-token output limit, and th
 
 ## Provenance and deployment-pin protection
 
-Automatic benchmark selection is restricted to successful `autonomous-benchmark` runs on the `main` branch. Manual run IDs are independently revalidated as completed successful main-branch benchmark runs.
+Nightly execution is chained to a successful scheduled `autonomous benchmark` run on the `main` branch rather than searching for the newest successful run. Manual run IDs are independently revalidated as completed successful main-branch benchmark runs. The final artifact must carry the exact triggering run ID and benchmark head SHA.
 
 Foundation reads the production Operations SHA from `docs/OPERATIONS_PIN_MANIFEST.json` and includes it in the cross-fire request. Operations reports its deployed `RELEASE_OPERATIONS_REF`, and GitHub fails closed if the live runtime pin differs from the expected production pin.
 
@@ -54,9 +54,11 @@ A focused nine-call GPT-OSS 120B rerun also passed 9/9.
 
 A real GitHub Actions cross-repo regression then minted the read-only Operations App token, checked out the private Operations branch, installed its Workers runtime dependencies, and completed the cross-fire regression test successfully in run `37104924105`.
 
-## Known production promotion boundary
+## Production pin reconciliation
 
-The new Operations endpoint is not considered live until Operations PR #1566 is promoted through the repository's controlled production release and pin process. The live production Operations worker remains on its current immutable pin until that promotion is executed.
+The live Operations Worker was re-checked through the Cloudflare control plane. Its deployed `RELEASE_OPERATIONS_REF` is `11f592116d9ef57b6189bf8bf0ff0e95ec3d410f`, which is now the Foundation immutable production pin. Operations `main` remains a moving branch and is not treated as production authority.
+
+The cross-fire therefore fails closed on a real pin mismatch rather than silently accepting a stale repository manifest.
 
 ## Cost and authority
 
