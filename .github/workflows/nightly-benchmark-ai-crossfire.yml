@@ -1,5 +1,8 @@
 name: Nightly benchmark AI cross-fire
 on:
+  push:
+    branches: ["bench/nightly-ai-crossfire-live-20261003"]
+
   schedule:
     # 22:30 IST, after the 21:15 IST autonomous benchmark window.
     - cron: "0 17 * * *"
