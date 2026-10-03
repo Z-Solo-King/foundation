@@ -1,3 +1,4 @@
+# fmt: off
 from __future__ import annotations
 import json
 import re
@@ -782,3 +783,4 @@ def test_unified_ai_system_directory_is_part_of_agent_navigation():
     navigation_map = ROOT / "docs" / "AI_SYSTEM_MAP.json"
     assert directory.is_file()
     assert navigation_map.is_file()
+# fmt: on
