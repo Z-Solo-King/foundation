@@ -221,7 +221,7 @@ Critical failure found in live job `110229827662`:
 - lane/artifact materialization correctly failed closed
 - artifacts were uploaded, but this run is not #157 closure evidence
 
-The earlier runner dependency failure is addressed in current Foundation main: `nightly-multi-agent-research-v3.yml` installs `httpx>=0.27,<1` before starting `scripts/research_worker_proxy.mjs`. A fresh production-dispatched 24-program run remains required for #157.
+The earlier runner dependency failure is addressed in current Foundation main: `nightly-multi-agent-research-v3.yml` installs `httpx>=0.27,<1` before starting `scripts/research_worker_proxy.py`. A fresh production-dispatched 24-program run remains required for #157.
 Do not merely rerun the failed workflow; first inspect the dependency ownership/installation contract, then make the smallest correct PR if needed.
 
 The failure is runner dependency/setup, not a Cloudflare model-generation failure.
@@ -406,7 +406,7 @@ Shared writes remain serialized and authority-owned.
 1. Re-read this handoff.
 2. Refresh Foundation/Operations main heads and the current pin manifest.
 3. Verify Cloudflare four-worker state.
-4. Inspect `nightly-multi-agent-research-v3.yml`, `scripts/research_worker_proxy.mjs`, and dependency installation files.
+4. Inspect `nightly-multi-agent-research-v3.yml`, `scripts/research_worker_proxy.py`, and dependency installation files.
 5. Determine the canonical dependency owner for `httpx`.
 6. Add `httpx` to the correct workflow/setup contract if missing; do not duplicate incompatible dependency management.
 7. Run focused workflow-contract/unit validation.
