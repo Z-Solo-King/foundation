@@ -78,3 +78,9 @@ The nightly benchmark now has a separate six-lane AI cross-fire advisory workflo
 The cross-fire is intentionally outside the benchmark acceptance gate. AI output cannot certify benchmark correctness, research completion, production health, credentials, policy, deployment, Cloudflare state, or workflow dispatch. Invalid model formatting is recorded as schema non-compliance rather than converted into success.
 
 The cross-fire is an observability and reasoning layer over the canonical benchmark: deterministic benchmark evidence remains authoritative, while AI disagreement and repeated flags can identify candidates for follow-up reproduction, regression coverage, or future benchmark design.
+
+## Provider CrossFire runner-boundary correction — 2026-10-03
+
+The privileged live provider CrossFire checks the pinned private Operations benchmark out beneath the GitHub Actions workspace as operations-provider-benchmark. The benchmark validation and runner bridge use the same workspace-local path and put both the Foundation and Operations roots on PYTHONPATH. This avoids the GitHub Actions checkout-path rejection previously observed when a repository was checked out under runner.temp.
+
+Provider execution remains bounded to the existing six-provider CrossFire contract, immutable Operations revision, protected provider secrets, and public-safe summary artifact. A comparison-unavailable result is never promoted to a successful comparative benchmark.
