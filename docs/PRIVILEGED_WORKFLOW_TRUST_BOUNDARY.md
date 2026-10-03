@@ -82,5 +82,3 @@ The nightly benchmark AI cross-fire workflow is advisory-only. GitHub Actions se
 The model fan-out executes inside the authenticated Operations runtime through its native Workers AI binding. The workflow does not hold or use a Cloudflare API token for model execution. Operations verifies the expected immutable runtime pin before invoking the six-model cross-fire.
 
 The aggregate is invalid unless all six configured models return transport-successful, schema-compliant advisory results and the returned Operations pin equals the Foundation production pin. AI output cannot authorize acceptance, production promotion, credentials, policy changes, Cloudflare mutation, or workflow dispatch.
-
-
