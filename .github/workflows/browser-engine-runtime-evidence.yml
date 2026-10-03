@@ -74,6 +74,11 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Sync pinned public deterministic core
+        working-directory: operations
+        shell: bash
+        run: node scripts/sync_public_core.mjs
+
       - name: Install browser adapter
         working-directory: operations
         run: |
