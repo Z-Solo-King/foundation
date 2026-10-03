@@ -8,7 +8,7 @@ on:
       operations_ref:
         description: "Immutable Operations revision containing browser engine support"
         required: false
-        default: "b2f6b9d092a50d46c601bf31f52e012e6b5023a2"
+        default: ""
         type: string
 
 permissions:
@@ -41,11 +41,30 @@ jobs:
           repositories: operations
           permission-contents: read
 
+      - name: Resolve immutable Operations revision
+        id: operations
+        shell: bash
+        env:
+          REQUESTED_OPERATIONS_REF: ${{ inputs.operations_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_OPERATIONS_REF:-}"
+          if [ -z "$ref" ]; then
+            ref="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path("docs/OPERATIONS_PIN_MANIFEST.json").read_text(encoding="utf-8"))["pins"]["production_runtime"]["sha"])
+          PY
+            )"
+          fi
+          [[ "$ref" =~ ^[0-9a-f]{40}$ ]]
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Z-Solo-King/operations
-          ref: ${{ inputs.operations_ref || 'b2f6b9d092a50d46c601bf31f52e012e6b5023a2' }}
+          ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-app.outputs.token }}
           path: operations
           fetch-depth: 1
@@ -67,7 +86,7 @@ jobs:
 
       - name: Run real browser-engine smoke
         working-directory: operations
-        run: python scripts/browser_engine_smoke.py --engine ${{ matrix.engine }} --url https://example.com/ | tee browser-engine-receipt.json
+        run: python scripts/browser_engine_smoke.py --engine ${{ matrix.engine }} --url https://heroic-ai.pages.dev/ | tee browser-engine-receipt.json
 
       - name: Upload engine receipt
         if: always()
