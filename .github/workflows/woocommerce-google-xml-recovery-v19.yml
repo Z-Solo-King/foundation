@@ -21,6 +21,7 @@ jobs:
   crossfire:
     name: AI candidate crossfire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 20
     environment: production-secret-sync
     outputs:
@@ -93,6 +94,7 @@ jobs:
     name: Recovery shard ${{ matrix.shard }}
     needs: crossfire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 50
     environment: production-secret-sync
     strategy:
@@ -181,7 +183,7 @@ jobs:
   publish:
     name: Validate and publish 30 non-empty feeds
     needs: build
-    if: ${{ always() }}
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
