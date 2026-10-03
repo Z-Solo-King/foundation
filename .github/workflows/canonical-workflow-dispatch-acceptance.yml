@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: canonical-workflow-dispatch-bridge
@@ -16,6 +15,9 @@ concurrency:
 jobs:
   bridge-acceptance:
     name: Prove supported workflow-dispatch bridge
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -77,6 +79,9 @@ jobs:
 
   controlled-production-reconcile:
     name: One-shot production reconcile bridge
+    permissions:
+      contents: read
+      actions: write
     if: "${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: controlled production reconcile') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
