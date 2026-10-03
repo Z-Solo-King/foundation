@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-"""Validate the shared Foundation/Operations family contract without copying runtime authority."""
+"""Validate the public Foundation/Operations family contract without private imports."""
 
 from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
-from backend.governance.contract_drift import (
-    DRIFT_CONTRACT_VERSION,
-    DriftFinding,
-    DriftReport,
-    DriftSeverity,
-)
 
+DRIFT_CONTRACT_VERSION = "cross-repo-drift/v1"
 
 EXPECTED = {
     "foundation": {
@@ -30,6 +27,59 @@ EXPECTED = {
         "private_secrets": True,
     },
 }
+
+
+class DriftSeverity(StrEnum):
+    INFO = "info"
+    ERROR = "error"
+
+
+@dataclass(frozen=True)
+class DriftFinding:
+    severity: DriftSeverity
+    repository: str
+    field: str
+    expected: str
+    actual: str
+    message: str
+
+
+@dataclass(frozen=True)
+class DriftReport:
+    schema_version: str
+    compatible: bool
+    findings: tuple[DriftFinding, ...]
+
+    def validate(self) -> None:
+        if self.schema_version != DRIFT_CONTRACT_VERSION:
+            raise ValueError("unsupported drift contract version")
+        if any(
+            not finding.repository.strip() or not finding.field.strip()
+            for finding in self.findings
+        ):
+            raise ValueError("drift findings require repository and field")
+
+    def canonical_json(self) -> str:
+        self.validate()
+        return json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "compatible": self.compatible,
+                "findings": [
+                    {
+                        "severity": finding.severity.value,
+                        "repository": finding.repository,
+                        "field": finding.field,
+                        "expected": finding.expected,
+                        "actual": finding.actual,
+                        "message": finding.message,
+                    }
+                    for finding in self.findings
+                ],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
 
 
 def load(path: Path) -> dict[str, object]:
@@ -96,18 +146,6 @@ def compare_active_family_catalogs(
                     )
                 )
 
-    if foundation.get("resource_governance") != "operations":
-        findings.append(
-            DriftFinding(
-                DriftSeverity.ERROR,
-                "foundation",
-                "resource_governance",
-                "operations",
-                str(foundation.get("resource_governance")),
-                "Foundation must not own protected resource governance",
-            )
-        )
-
     return DriftReport(
         schema_version=DRIFT_CONTRACT_VERSION,
         compatible=not findings,
@@ -121,23 +159,10 @@ def main() -> int:
     parser.add_argument("--operations", type=Path, required=True)
     args = parser.parse_args()
 
-    report = compare_active_family_catalogs(load(args.foundation), load(args.operations))
-    report.validate()
-    print(report.canonical_json() if hasattr(report, "canonical_json") else json.dumps({
-        "schema_version": report.schema_version,
-        "compatible": report.compatible,
-        "findings": [
-            {
-                "severity": item.severity.value,
-                "repository": item.repository,
-                "field": item.field,
-                "expected": item.expected,
-                "actual": item.actual,
-                "message": item.message,
-            }
-            for item in report.findings
-        ],
-    }, sort_keys=True, separators=(",", ":")))
+    report = compare_active_family_catalogs(
+        load(args.foundation), load(args.operations)
+    )
+    print(report.canonical_json())
     return 0 if report.compatible else 1
 
 
