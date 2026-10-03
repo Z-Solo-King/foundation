@@ -4,8 +4,8 @@
   "audited_at": "2026-10-02T12:50:00.000Z",
   "public_safe": true,
   "live_main": {
-    "foundation": "READ_LIVE_FROM_GITHUB",
-    "operations": "READ_LIVE_FROM_GITHUB"
+    "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
+    "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
   },
   "runtime_pins": {
     "foundation_runtime": null,
@@ -35,7 +35,7 @@
   },
   "current_queue": {
     "schema": "live-issue-snapshot/v1",
-    "observed_at": "2026-10-02T12:01:07.106Z",
+    "observed_at": "2026-10-03T11:30:26Z",
     "open_issue_count": 4,
     "foundation": [
       58,
@@ -146,20 +146,21 @@
     "live_acceptance_queue": {
       "foundation": [
         58,
-        157,
-        1249
+        1247,
+        1249,
+        157
       ],
       "operations": [
         603
       ],
-      "total": 4
+      "total": 5
     },
     "production_operations_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
   },
   "head_reference_mode": "live_github",
   "last_verified_main": {
-    "foundation": "3120e142ddb3819a74b6342bc6de3da672dab8e8",
-    "operations": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a"
+    "foundation": "a29ecf986fe02de70533b6def35ba583da9ff2da",
+    "operations": "adc600221169cc4dadee0bdd7d68be30c58e6727"
   },
   "snapshot_semantics": "live_reference_with_last_verified_history",
   "github_heads_last_verified": {
@@ -170,7 +171,7 @@
     "schema": "hosted-ci-authority/v1",
     "repository": "Z-Solo-King/foundation",
     "foundation_is_canonical": true,
-    "operations_workflow_directory": "absent_after_reconciliation",
+    "operations_workflow_directory": "present_pending_authority_reconciliation",
     "operations_main": "ce1dc7fe780fdbbcbdf575fd936f5ae61e4ca58a",
     "feed_hunt_capability": "Operations tools/woocommerce_32_plugin_feed_hunt.mjs",
     "hosted_workflow": ".github/workflows/woocommerce-32-plugin-feed-hunt.yml",
@@ -209,6 +210,12 @@
     "single_authority_preserved": true
   },
   "open_issue_count": 11,
+  "live_branch_inventory_2026_10_03": {
+    "foundation": 1400,
+    "operations": 1040,
+    "total": 2440,
+    "method": "live GitHub paginated branch enumeration; remote ref deletion is not exposed by the connected write surface"
+  },
   "system_integration": {
     "schema": "system-integration-receipt/v1",
     "foundation_contract": "docs/SYSTEM_INTEGRATION_CONTRACT.json",
@@ -300,11 +307,5 @@
     "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs.",
     "total_branches": 2310,
     "note": "Current counts are live GitHub pagination boundaries; retirement executor remains fail-closed."
-  },
-  "live_branch_inventory_2026_10_03": {
-    "foundation": 1400,
-    "operations": 1040,
-    "total": 2440,
-    "method": "live GitHub paginated branch enumeration in the current audit; remote ref deletion is not exposed by the connected write surface"
   }
 }
