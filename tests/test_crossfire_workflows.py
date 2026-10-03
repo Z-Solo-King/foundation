@@ -21,8 +21,14 @@ def test_provider_crossfire_allows_up_to_six_and_records_unavailable_comparison(
     assert "fewer than two configured direct providers" in text
     assert "path: operations-provider-benchmark" in text
     assert "${{ runner.temp }}/operations-provider-benchmark" not in text
-    assert "${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py" in text
-    assert "PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark" in text
+    assert (
+        "${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py"
+        in text
+    )
+    assert (
+        "PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark"
+        in text
+    )
     assert "GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}" in text
     assert "GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}" in text
     assert "CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}" in text
