@@ -4,7 +4,7 @@ on:
     branches:
       - "repair/session-independent-final-20261003-r2"
 permissions:
-  contents: read
+  contents: write
 jobs:
   format:
     runs-on: ubuntu-latest
@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          persist-credentials: true
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -23,6 +23,20 @@ jobs:
       - run: npm exec --yes prettier@3.9.9 -- --write .github/workflows/autonomous-engineering-supervisor.yml .github/workflows/commerce-feed-product-crawl.yml .github/workflows/coverage-driven-runtime-matrix.yml .github/workflows/project-improvement-supervisor.yml .github/workflows/woocommerce-emergency-xml-recovery.yml .github/workflows/woocommerce-native-xml-recovery-v18.yml tools/autonomous_engineering_supervisor.mjs docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json
       - run: python -m pip install --disable-pip-version-check ruff==0.16.9
       - run: ruff format tests/test_crossfire_workflows.py
+      - name: Commit exact formatter output
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- .github/workflows/autonomous-engineering-supervisor.yml .github/workflows/commerce-feed-product-crawl.yml .github/workflows/coverage-driven-runtime-matrix.yml .github/workflows/project-improvement-supervisor.yml .github/workflows/woocommerce-emergency-xml-recovery.yml .github/workflows/woocommerce-native-xml-recovery-v18.yml tools/autonomous_engineering_supervisor.mjs docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json tests/test_crossfire_workflows.py
+          if git diff --cached --quiet; then
+            echo "formatter produced no changes"
+            exit 0
+          fi
+          git commit -m "style: apply exact pinned formatter output [skip ci]"
+          git push origin HEAD:repair/session-independent-final-20261003-r2
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: session-independent-format-output
