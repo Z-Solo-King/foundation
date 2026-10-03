@@ -144,3 +144,16 @@ test('governance sweep never reuses an autonomous mission issue', () => {
   assert.equal(result.issue, null);
   assert.equal(result.state, null);
 });
+
+
+test('provider crossfire findings select the provider benchmark lane', () => {
+  const context = {
+    open_issues: [{number: 77, title: 'live AI provider cross-fire benchmark', body: 'provider benchmark automation evidence'}],
+    recent_runs: [],
+    workflow_attempts: {},
+  };
+  const plan = deterministicFallbackPlan(context, 'standard', 2);
+  assert.equal(plan.mission_type, 'runtime_reconciliation');
+  assert.equal(plan.actions[0].workflow, 'provider-fleet-runtime-state.yml');
+  assert.ok(plan.actions.some((action) => action.workflow === 'live-ai-provider-crossfire.yml'));
+});
