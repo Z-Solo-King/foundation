@@ -82,3 +82,10 @@ The nightly benchmark AI cross-fire workflow is advisory-only. GitHub Actions se
 The model fan-out executes inside the authenticated Operations runtime through its native Workers AI binding. The workflow does not hold or use a Cloudflare API token for model execution. Operations verifies the expected immutable runtime pin before invoking the six-model cross-fire.
 
 The aggregate is invalid unless all six configured models return transport-successful, schema-compliant advisory results and the returned Operations pin equals the Foundation production pin. AI output cannot authorize acceptance, production promotion, credentials, policy changes, Cloudflare mutation, or workflow dispatch.
+
+
+## Session-independent automation and trigger reconciliation — 2026-10-03
+
+Autonomous and credential-bearing automation is independent of ChatGPT or any interactive client session. Scheduled execution, trusted `main` execution, and explicit workflow dispatch are the only scheduler inputs; workflow-run IDs, immutable commit SHAs, and artifacts provide durable correlation. Application `chat_id` and `request_id` values are correlation metadata only and are never derived from conversational session state.
+
+The autonomous supervisor, governance sweep, provider cross-fire, benchmark cross-fire, coverage matrix, and privileged WooCommerce recovery paths are guarded to `refs/heads/main` before execution. Registered `workflow_run` chains remain explicitly allowlisted by the workflow authority registry and validate trusted upstream success; they are runtime chaining, not ChatGPT-session dependencies.
