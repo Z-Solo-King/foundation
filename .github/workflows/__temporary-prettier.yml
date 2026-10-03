@@ -1,0 +1,33 @@
+name: Temporary formatter — live CrossFire workflows
+on:
+  push:
+    branches:
+      - fix/live-crossfire-workflow-hardening-2026-10-03
+    paths:
+      - ".github/workflows/browser-engine-runtime-evidence.yml"
+      - ".github/workflows/live-ai-provider-crossfire.yml"
+      - ".github/workflows/nightly-benchmark-ai-crossfire.yml"
+      - ".github/workflows/__temporary-prettier.yml"
+permissions:
+  contents: write
+jobs:
+  format:
+    if: ${{ github.event.head_commit.message != 'chore: format live CrossFire workflows' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Format workflow files
+        run: npx --yes prettier@3.9.9 --write .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml
+      - name: Commit formatter changes
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/browser-engine-runtime-evidence.yml .github/workflows/live-ai-provider-crossfire.yml .github/workflows/nightly-benchmark-ai-crossfire.yml
+          git commit -m "chore: format live CrossFire workflows"
+          git push origin HEAD:fix/live-crossfire-workflow-hardening-2026-10-03
