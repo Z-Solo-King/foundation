@@ -61,3 +61,37 @@ def test_autonomous_supervisor_ids_are_run_scoped_not_interactive_session_scoped
     assert "autonomous-plan:${missionId}:${cycle}" in value
     assert "session_id" not in value
     assert "conversation_id" not in value
+
+
+def test_all_registered_privileged_push_workflows_are_main_gated():
+    registry = (ROOT / "docs/WORKFLOW_AUTHORITY_REGISTRY.json").read_text(encoding="utf-8")
+    data = __import__("json").loads(registry)
+    for workflow_path, _role in data["explicit_privileged_workflows"]:
+        path = ROOT / workflow_path
+        value = path.read_text(encoding="utf-8")
+        if "\n  push:" not in value and "\n'on':\n  push:" not in value:
+            continue
+        lines = value.splitlines()
+        in_jobs = False
+        i = 0
+        while i < len(lines):
+            if lines[i] == "jobs:":
+                in_jobs = True
+                i += 1
+                continue
+            if not in_jobs:
+                i += 1
+                continue
+            if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].rstrip().endswith(":"):
+                start = i
+                i += 1
+                while i < len(lines) and not (lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].rstrip().endswith(":")):
+                    i += 1
+                block = lines[start:i]
+                if any(line.startswith("    runs-on:") for line in block):
+                    assert any(
+                        line.startswith("    if:") and "github.ref == 'refs/heads/main'" in line
+                        for line in block
+                    ), f"{workflow_path} has a privileged push job without a main guard"
+                continue
+            i += 1
