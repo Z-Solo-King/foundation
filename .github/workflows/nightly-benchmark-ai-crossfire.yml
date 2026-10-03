@@ -38,7 +38,7 @@ jobs:
           if [ -n "$MANUAL_RUN_ID" ]; then
             run_id="$MANUAL_RUN_ID"
           else
-            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --limit 20 --json databaseId,status,conclusion --jq '.[] | select(.status == "completed" and .conclusion == "success") | .databaseId' | head -n 1)"
+            run_id="$(gh run list --workflow autonomous-benchmark.yml --repo "$GITHUB_REPOSITORY" --branch main --limit 20 --json databaseId,status,conclusion,headBranch --jq '.[] | select(.status == "completed" and .conclusion == "success" and .headBranch == "main") | .databaseId' | head -n 1)"
           fi
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
@@ -49,13 +49,14 @@ jobs:
           RUN_ID: ${{ steps.run.outputs.run_id }}
         run: |
           set -euo pipefail
-          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha > .runtime/benchmark-run.json
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json name,status,conclusion,headSha,headBranch,event > .runtime/benchmark-run.json
           jq -e '
             (.name == "Autonomous benchmark"
               or .name == "Autonomous Benchmark"
               or .name == "autonomous-benchmark")
             and .status == "completed"
             and .conclusion == "success"
+            and .headBranch == "main"
           ' .runtime/benchmark-run.json >/dev/null
 
       - name: Download final evidence
