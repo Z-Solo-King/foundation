@@ -44,9 +44,6 @@
     } else if (!api.API_BASE) {
       api.state.backendOk = false;
       api.state.backendText = 'API not configured';
-    } else if (!api.token()) {
-      api.state.backendOk = false;
-      api.state.backendText = 'Session token required for live chat';
     } else {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 10_000);
