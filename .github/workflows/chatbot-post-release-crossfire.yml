@@ -96,11 +96,16 @@ jobs:
           repository: Z-Solo-King/operations
           ref: ${{ steps.operations.outputs.ref }}
           token: ${{ steps.operations-token.outputs.token }}
-          path: ${{ runner.temp }}/operations
+          path: operations
           persist-credentials: false
 
+      - name: Sync pinned public deterministic core
+        working-directory: operations
+        shell: bash
+        run: node scripts/sync_public_core.mjs
+
       - name: Install pinned Operations runtime
-        working-directory: ${{ runner.temp }}/operations
+        working-directory: operations
         shell: bash
         run: |
           set -euo pipefail
@@ -135,7 +140,7 @@ jobs:
         run: |
           set +e
           mkdir -p .runtime/chatbot-crossfire
-          python "${{ runner.temp }}/operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
+          python "operations/private/benchmark/ai_provider_crossfire.py"             --providers-max 6 --repeats 3 --workers 12             --output .runtime/chatbot-crossfire/private.json             > .runtime/chatbot-crossfire/runner.log 2>&1
           status=$?
           set -e
 
@@ -179,6 +184,18 @@ jobs:
             quality_passes:([.providers[]?.quality_passes]|add // 0),
             quality_total:([.providers[]?.quality_total]|add // 0)
           }' .runtime/chatbot-crossfire/private.json > .runtime/chatbot-crossfire/summary.json
+
+      - name: Enforce comparative benchmark availability
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .runtime/chatbot-crossfire/summary.json
+          comparison_state="$(jq -r '.comparison_state // "complete"' .runtime/chatbot-crossfire/summary.json)"
+          if [ "$comparison_state" = "comparison_unavailable" ]; then
+            echo "Provider CrossFire incomplete: fewer than two configured providers; benchmark result remains non-comparative."
+            exit 1
+          fi
 
       - name: Upload CrossFire evidence
         if: always()
