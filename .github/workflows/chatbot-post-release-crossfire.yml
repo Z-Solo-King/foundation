@@ -127,6 +127,65 @@ jobs:
           print({"platforms": len(platforms), "independent_lanes": len(lanes)})
           PY
 
+      - name: Diagnose provider admission (no secret values)
+        working-directory: operations
+        env:
+          PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+          GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          CEREBRAS_MODEL: ${{ secrets.CEREBRAS_MODEL }}
+          NVIDIA_NIM_MODEL: ${{ secrets.NVIDIA_NIM_MODEL }}
+          COHERE_MODEL: ${{ secrets.COHERE_MODEL }}
+          HF_MODEL: ${{ secrets.HF_MODEL }}
+          SILICONFLOW_MODEL: ${{ secrets.SILICONFLOW_MODEL }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          with open("private/chatbot/provider_transport_catalog.json",encoding="utf-8") as fh:
+              catalog=json.load(fh)
+          specs={p["id"]:p for p in catalog["providers"]}
+          raw=os.getenv("PROVIDER_KEYS_JSON","").strip()
+          payload={}
+          if raw:
+              try: payload=json.loads(raw)
+              except json.JSONDecodeError: payload={}
+          order=["openrouter_free","groq","gemini","cerebras","nvidia_nim","cohere_free","huggingface_free","siliconflow"]
+          for name in order:
+              spec=specs[name]
+              issues=[]
+              env_key=os.getenv(spec["key"],"").strip()
+              if env_key:
+                  model=os.getenv(spec.get("model_env",""),"").strip() or spec["model"]
+                  issues.append("direct-key-present" if model == spec["model"] else "direct-model-mismatch")
+              else:
+                  issues.append("direct-key-missing")
+              value=payload.get(name)
+              if isinstance(value,dict):
+                  if not all(isinstance(value.get(k),str) and value.get(k).strip() for k in ("endpoint","api_key","model")):
+                      issues.append("json-shape-invalid")
+                  elif value.get("endpoint") != spec["endpoint"]:
+                      issues.append("json-endpoint-mismatch")
+                  elif value.get("model") != spec["model"]:
+                      issues.append("json-model-mismatch")
+                  elif value.get("zero_cost") is False:
+                      issues.append("json-zero-cost-false")
+                  else:
+                      issues.append("json-candidate-valid")
+              else:
+                  issues.append("json-entry-missing")
+              print(f"{name}: {', '.join(issues)}")
+          PY
+
       - name: Run up-to-six-provider AI CrossFire
         env:
           PROVIDER_KEYS_JSON: ${{ secrets.PROVIDER_KEYS_JSON }}
