@@ -75,7 +75,6 @@ The promotion PR may stage the next immutable Operations revision in post-releas
 - `.github/workflows/nightly-benchmark-ai-crossfire.yml` is an advisory-only scheduled/manual workflow using six analytical lanes and the approved zero-cost Workers AI model contract. It records lane identity and deterministic receipts and has no production/promotion authority.
 - Privileged workflows retain trusted triggers only; live validation may be performed through an explicit trusted/manual execution path. No privileged workflow uses a non-main push trigger.
 
-
 ## Session-independent automation — 2026-10-03
 
 Credential-bearing automation runs only from trusted `main` or an explicit manual dispatch of the trusted workflow. No privileged workflow depends on a ChatGPT/mobile session, conversation identifier, interactive-agent lifetime, or OpenAI ChatGPT API session. Workflow-run IDs, commit SHAs, immutable artifact provenance, and protected runtime credentials are the durable execution boundary.
