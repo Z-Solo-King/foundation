@@ -1,6 +1,6 @@
 {
   "schema_version": "system-integration-contract/v1",
-  "updated_on": "2026-10-02",
+  "updated_on": "2026-10-03",
   "purpose": "Prevent recently-added automation, API, audit, quality, learning, self-evolution, and extractor/mapper features from becoming independent bolt-ons.",
   "architecture": {
     "vertical_surfaces": "Project improvement matrix defines what is being improved.",
@@ -83,7 +83,7 @@
         "auto-merge"
       ],
       "cadence": "twice_daily_governance_sweep",
-      "governance_schedule": "02:17 and 14:17 UTC",
+      "governance_schedule": "20:30 UTC (02:00 IST) and 14:17 UTC (19:47 IST)",
       "entrypoint": "tools/autonomous_engineering_supervisor.mjs",
       "preflight": ".github/workflows/twice-daily-governance-sweep.yml",
       "task_family": "audit_assist",

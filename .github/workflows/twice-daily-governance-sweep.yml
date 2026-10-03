@@ -2,7 +2,9 @@ name: Twice-daily governance sweep
 
 on:
   schedule:
-    - cron: "17 2 * * *"
+    # 02:00 IST = 20:30 UTC on the previous day. Follow the distributed AI research window.
+    - cron: "30 20 * * *"
+    # 19:47 IST = 14:17 UTC. Retain the second daily governance pass.
     - cron: "17 14 * * *"
   workflow_dispatch:
     inputs:

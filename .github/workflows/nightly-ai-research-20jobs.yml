@@ -2,7 +2,8 @@ name: Nightly AI research — 20 parallel jobs
 
 on:
   schedule:
-    - cron: "0 18 * * *"
+    # 01:00 IST = 19:30 UTC on the previous day. Start the distributed 20-job research window.
+    - cron: "30 19 * * *"
   workflow_dispatch:
     inputs:
       lookback_hours:

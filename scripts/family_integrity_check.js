@@ -28,6 +28,7 @@ const matrix = readJson("docs/OPEN_ISSUE_ACCEPTANCE_MATRIX.json");
 const taskMatrix = readJson("benchmark/ai_agent_task_matrix_v1.json");
 const familyState = readJson("docs/FAMILY_SYNC_STATE.json");
 const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly-ai-research-20jobs.yml"), "utf8");
+const governanceWorkflow = fs.readFileSync(path.join(ROOT, ".github/workflows/twice-daily-governance-sweep.yml"), "utf8");
 
 if (graph.schema !== "family-integration-graph/v1") fail("family graph schema mismatch");
 if (graph.status !== "CURRENT") fail("family graph is not CURRENT");
@@ -105,7 +106,9 @@ if (JSON.stringify(normalizeIssueNumbers((taskMatrix.current_issue_targets || {}
 
 if (workflow.split("seed_repos:").length - 1 !== 20) fail("nightly research does not contain exactly 20 seed-repository rows");
 if (!workflow.includes("max-parallel: 20")) fail("nightly research parallelism is not 20");
-if (!workflow.includes('cron: "0 18 * * *"')) fail("nightly research schedule changed");
+if (!workflow.includes('cron: "30 19 * * *"')) fail("nightly research schedule changed");
+if (!governanceWorkflow.includes('cron: "30 20 * * *"')) fail("governance overnight schedule changed");
+if (!governanceWorkflow.includes('cron: "17 14 * * *"')) fail("governance second daily schedule changed");
 
 const staleCorpus = JSON.stringify(taskMatrix);
 if (staleCorpus.includes("Foundation #282")) fail("stale Foundation #282 benchmark target exists");
