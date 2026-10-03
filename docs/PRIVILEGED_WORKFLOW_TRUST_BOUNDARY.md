@@ -67,3 +67,11 @@ Credential-bearing workflows that probe or release the public application must t
 ## 2026-10-02 controlled Operations pin promotion staging
 
 The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.
+
+## 2026-10-03 current CrossFire and browser/nightly synchronization
+
+- `.github/workflows/live-ai-provider-crossfire.yml` checks the private Operations repository out below `GITHUB_WORKSPACE` using a workspace-local path and exposes the Foundation and private Operations roots on `PYTHONPATH` for the benchmark runner.
+- The live provider benchmark receives only environment-scoped provider secrets and uses the existing private runner's canonical provider configuration. A comparison with fewer than two admissible direct providers is treated as non-comparative and fails closed rather than being reported as a benchmark result.
+- `.github/workflows/browser-engine-runtime-evidence.yml` resolves the Operations revision from the canonical production pin manifest when no explicit revision is supplied, targets the real Heroic AI Pages origin, and keeps Chromium, Firefox and WebKit evidence as independent lanes.
+- `.github/workflows/nightly-benchmark-ai-crossfire.yml` remains advisory-only. It uses the project-approved zero-cost model contract, separates analytical roles, records lane identity and evidence, and cannot certify correctness, mutate production state, or grant deployment/promotion authority.
+- These workflows may generate evidence and fail a validation gate, but they do not become a second promotion authority; production deployment remains the canonical release path.
