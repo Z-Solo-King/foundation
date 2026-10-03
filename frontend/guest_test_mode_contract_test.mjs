@@ -55,7 +55,10 @@ assert(
 assert(state.includes("function newChat()"), "new chat state lifecycle is missing");
 assert(state.includes("title: 'New chat'"), "new chats must start with the canonical title");
 assert(state.includes("setActiveChat(chat.id)"), "new chats must become the active chat");
-assert.match(app, /new CustomEvent\(["']rie:chat-response["']/);
+assert(
+  /new CustomEvent\(["']rie:chat-response["']/.test(app),
+  "authenticated chat response event contract is missing",
+);
 assert(product.includes("Guest Test mode"), "product documentation must describe Guest Test mode");
 assert(
   !product.includes(
