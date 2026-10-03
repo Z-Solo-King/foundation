@@ -206,3 +206,18 @@ The live branch inventory remains 2,440 refs across the two repositories. Branch
 ## 2026-10-03 final synchronization marker
 
 The continuity documents were refreshed from the live GitHub heads after the Foundation and Operations repair merges. This marker exists only to make the final synchronization state explicit; it does not change runtime or authority behavior.
+
+## 2026-10-03 final live reconciliation
+
+Live GitHub heads for this reconciliation are Foundation `3e96d60da48470005884e21a980f79218096d199` and Operations `670e65ee168b64f34156623dea88549d7fa72a52`. These are moving repository heads, not production certification values.
+
+The Foundation and Operations workflow authority boundary is now consistent: Foundation is the hosted GitHub Actions authority, while Operations retains private runtime source and contains no `.github/workflows/` directory on `main`. The Operations feed implementation remains source code only and is no longer a second CI authority.
+
+The live acceptance queue is Foundation #58, #157, and #1249 plus Operations #603. Autonomous mission records and the Operations integrity-drift issue are separate execution/incident state and are not silently promoted to acceptance completion.
+
+The public deterministic Foundation core remains the source of truth. Operations consumes that core through its generated compatibility layer, pinned to the validated Foundation revision and including the full required manifest. Shared mechanics continue to follow the trunk -> group -> leaf model, with semantic parity and contract tests required before removing duplicates.
+
+The nightly research workflow now has an explicit private-runner dependency installation boundary for `httpx`. The six-model Cloudflare Workers AI CrossFire remains advisory-only, while the 24-program nightly research CrossFire continues to require a genuine provider-backed run with complete lane artifacts before issue #157 can be closed.
+
+The last fully verified branch inventory was 2,440 refs across Foundation and Operations. Branch retirement remains fail-closed and evidence-gated; remote ref deletion is not exposed by the connected GitHub write surface. Do not infer that the remaining branches are duplicates from their names alone.
+
