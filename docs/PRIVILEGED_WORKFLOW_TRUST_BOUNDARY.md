@@ -116,3 +116,11 @@ The live nightly research workflow's coordinator capacity is configured by `RESE
 The legacy manual .github/workflows/native-google-feed-hunt.yml remains a read-only fallback and does not hold production or provider credentials. Guessed feed paths are same-host-only. XML URLs explicitly exposed by public directory indexes, HTML, robots declarations or sitemap documents may be cross-origin, but every candidate and every redirect is public-URL validated, and redirects remain on the discovered feed host before evidence is accepted. Accepted evidence records discovery provenance (path_guess, directory_index_link or explicit_page_reference) so transport failures are not conflated with candidate-negative results.
 
 This boundary does not permit authentication, challenge/CAPTCHA bypass, clearance-cookie replay, arbitrary cross-origin expansion, or access to non-public/reserved network addresses. The current canonical execution remains the WooCommerce Native XML Recovery V18 path; the manual hunter is evidence-recovery fallback only.
+
+## Operations runtime pin and benchmark consumer reconciliation — 2026-10-04
+
+The canonical production Operations revision is resolved from the immutable Foundation pin manifest. Runtime smoke, browser-engine evidence, chatbot provider CrossFire, nightly canary, and live extractor benchmark consumers must use that same immutable revision unless an explicitly supplied immutable override is part of the workflow contract.
+
+The validated Operations main is `621fc8aa536b60bbc6f9e686c4ce0a769d8cab56`. This revision contains the centralized validation-contract repair and hardened standalone GitHub workspace bridge. Promotion into Cloudflare production remains a separate controlled release transaction; changing the manifest does not itself certify or deploy production runtime state.
+
+Validation note: protected CI must evaluate the exact PR head after every runtime-pin or workflow-governance change; stale successful runs are not accepted as current-head evidence.
