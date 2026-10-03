@@ -17,6 +17,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main --depth=1
           git reset --hard origin/main
           git cherry-pick bb158ad74102383dd9fd6f1a787fded74c3f8aaf
@@ -31,7 +33,5 @@ jobs:
           set -euo pipefail
           rm -f .github/workflows/_tmp-release-packaging-repair.yml
           git add -A
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "fix: restore release packaging from current main"
           git push --force-with-lease origin HEAD:fix/operations-worker-staging-packaging-2026-10-03
