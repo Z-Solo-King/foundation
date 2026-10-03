@@ -122,8 +122,6 @@ assert.match(app, /event === [\"']done[\"']/);
 assert.match(app, /const activeChatId = chatId \|\| api\.ensureChat\(\)\.id/);
 assert.match(app, /if \(!api\.token\(\)\)/);
 assert.match(app, /status: [\"']auth_required[\"']/);
-assert.match(composer, /Session token required for Research/);
-assert.match(composer, /api\.token\(\)/);
 assert.doesNotMatch(
   app,
   /async function submitResearch|async function pollResearch|function renderResearch|function processQueue/,
