@@ -202,3 +202,7 @@ The current acceptance-track issues, read live from GitHub, are Foundation #58, 
 Cross-repository validation now materializes the canonical Foundation public core into Operations test jobs and uses both repository roots for language-fit generation. This preserves Foundation as the source of truth without vendoring duplicate source ownership in Operations.
 
 The live branch inventory remains 2,440 refs across the two repositories. Branch retirement remains fail-closed and evidence-gated; the connected API surface does not expose direct remote ref deletion, while the repository's explicit microscope-retirement workflow retains the authorization guard.
+
+## 2026-10-03 final synchronization marker
+
+The continuity documents were refreshed from the live GitHub heads after the Foundation and Operations repair merges. This marker exists only to make the final synchronization state explicit; it does not change runtime or authority behavior.
