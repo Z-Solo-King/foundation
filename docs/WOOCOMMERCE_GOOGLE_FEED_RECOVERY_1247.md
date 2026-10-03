@@ -42,3 +42,8 @@ Recovery output is evidence, not a public GitHub Release. Generated indexes must
 ## Final least-tried campaign — 2026-10-02
 
 The final campaign orders the complete 30-site learning corpus by historical meaningful-attempt count, lowest first, with a deterministic name tie-break. It runs six independent AI candidate lanes and six parallel recovery shards. AI remains candidate-only; native acceptance still requires a current public same-origin Google Merchant XML/RSS/Atom payload with the required Google namespace and product fields. Sites already heavily attempted are not given another broad matrix pass.
+
+
+## Session-independent automation — 2026-10-03
+
+The WooCommerce recovery workflows are hosted GitHub Actions jobs. Their trigger, execution, checkpoints, artifacts, and retries are owned by GitHub workflow/run state and do not depend on an interactive ChatGPT conversation remaining open. AI cross-fire output is advisory candidate evidence; deterministic feed validation and artifact contracts remain authoritative.
