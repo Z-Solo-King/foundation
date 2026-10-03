@@ -8,12 +8,12 @@ on:
       operations_ref:
         description: Immutable Operations revision to benchmark
         required: false
-        default: bf4af8db50d7b39c79acd09a9e90237856962abb
+        default: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56
         type: string
       benchmark_tools_ref:
         description: Exact Operations revision containing benchmark producer/evaluator tooling
         required: false
-        default: d4ef2e6d28435a59c735b9dc4d0de31f44b9cf29
+        default: 621fc8aa536b60bbc6f9e686c4ce0a769d8cab56
         type: string
 
 permissions:
@@ -76,8 +76,8 @@ jobs:
             url: https://webscraper.io/test-sites/e-commerce/dynamic/computers/laptops
     env:
       OPERATIONS_REPOSITORY: Z-Solo-King/operations
-      OPERATIONS_REF: ${{ inputs.operations_ref || 'bf4af8db50d7b39c79acd09a9e90237856962abb' }}
-      BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || 'd4ef2e6d28435a59c735b9dc4d0de31f44b9cf29' }}
+      OPERATIONS_REF: ${{ inputs.operations_ref || '621fc8aa536b60bbc6f9e686c4ce0a769d8cab56' }}
+      BENCHMARK_TOOLS_REF: ${{ inputs.benchmark_tools_ref || '621fc8aa536b60bbc6f9e686c4ce0a769d8cab56' }}
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Create Operations read token
