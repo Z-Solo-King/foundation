@@ -755,7 +755,6 @@
     "foundation": [
       58,
       157,
-      1247,
       1249
     ],
     "operations": [
@@ -771,7 +770,7 @@
       "integrity"
     ],
     "all_open_issue_count": {
-      "foundation": 7,
+      "foundation": 10,
       "operations": 1
     }
   }
