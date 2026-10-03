@@ -41,14 +41,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes prettier@3.9.9 --write \\
-            .github/workflows/autonomous-engineering-supervisor.yml \\
-            .github/workflows/commerce-feed-product-crawl.yml \\
-            .github/workflows/coverage-driven-runtime-matrix.yml \\
-            .github/workflows/project-improvement-supervisor.yml \\
-            .github/workflows/woocommerce-emergency-xml-recovery.yml \\
+          files=(
+            .github/workflows/autonomous-engineering-supervisor.yml
+            .github/workflows/commerce-feed-product-crawl.yml
+            .github/workflows/coverage-driven-runtime-matrix.yml
+            .github/workflows/project-improvement-supervisor.yml
+            .github/workflows/woocommerce-emergency-xml-recovery.yml
             tools/autonomous_engineering_supervisor.mjs
-          git diff -- .github/workflows/autonomous-engineering-supervisor.yml .github/workflows/commerce-feed-product-crawl.yml .github/workflows/coverage-driven-runtime-matrix.yml .github/workflows/project-improvement-supervisor.yml .github/workflows/woocommerce-emergency-xml-recovery.yml tools/autonomous_engineering_supervisor.mjs
+          )
+          npx --yes prettier@3.9.9 --write "${files[@]}"
+          git diff -- "${files[@]}"
+
       - name: Run strict changed-file hygiene gate
         shell: bash
         run: |
