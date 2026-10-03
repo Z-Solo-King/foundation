@@ -1,0 +1,75 @@
+name: LIVE NOW — browser engine matrix
+run-name: LIVE NOW — browser engines
+
+on:
+  push:
+    branches:
+      - fix/chatbot-live-crossfire-browser-2026-10-03
+    paths:
+      - ".github/workflows/live-browser-matrix-now.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Mint Operations read token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ secrets.OPERATIONS_APP_ID }}
+          private-key: ${{ secrets.OPERATIONS_APP_PRIVATE_KEY }}
+          owner: Z-Solo-King
+          repositories: operations
+          permission-contents: read
+      - name: Resolve Operations revision
+        id: ops
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          sha="$(gh api repos/Z-Solo-King/operations/commits/main --jq '.sha')"
+          test "${#sha}" -eq 40
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Checkout Operations
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Z-Solo-King/operations
+          ref: ${{ steps.ops.outputs.sha }}
+          token: ${{ steps.app.outputs.token }}
+          path: operations
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14"
+      - name: Install browser runtime
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ".[test,browser]"
+          python -m pip install --disable-pip-version-check workers-py workers-runtime-sdk
+          python -m playwright install --with-deps "${{ matrix.engine }}"
+      - name: Exercise live Heroic AI page
+        working-directory: operations
+        run: |
+          set -euo pipefail
+          python scripts/browser_engine_smoke.py --engine "${{ matrix.engine }}" --url https://heroic-ai.pages.dev/ | tee browser-engine-receipt.json
+          jq -e '.passed == true and .status == 200 and .html_bytes > 0' browser-engine-receipt.json
+      - name: Upload receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: live-browser-${{ matrix.engine }}-${{ github.run_id }}
+          path: operations/browser-engine-receipt.json
+          retention-days: 14
+          if-no-files-found: error
