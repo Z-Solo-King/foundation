@@ -21,11 +21,7 @@
     "public_worker": "heroic",
     "private_edge_worker": "operations-edge",
     "private_core_worker": "operations",
-    "workers": [
-      "heroic",
-      "operations-edge",
-      "operations"
-    ],
+    "workers": ["heroic", "operations-edge", "operations"],
     "workers_dev_subdomain": false,
     "legacy_worker": null,
     "queues": 0,
@@ -37,22 +33,12 @@
     "schema": "live-issue-snapshot/v1",
     "observed_at": "2026-10-03T13:00:00Z",
     "open_issue_count": 4,
-    "foundation": [
-      58,
-      157,
-      1249
-    ],
-    "operations": [
-      603
-    ],
+    "foundation": [58, 157, 1249],
+    "operations": [603],
     "operations_count": 1,
     "total_open_issue_count": 4,
     "all_open_issue_count": 11,
-    "excluded_open_issue_classes": [
-      "autonomous-mission",
-      "autonomous-improvement",
-      "integrity"
-    ],
+    "excluded_open_issue_classes": ["autonomous-mission", "autonomous-improvement", "integrity"],
     "authority": "GitHub live issue API; acceptance queue excludes autonomous execution/improvement and integrity incident state; never a production certificate"
   },
   "evidence": {
@@ -105,7 +91,7 @@
   },
   "foundation_open_prs": [],
   "operations_open_prs": [],
-  "open_pr_count": 6,
+  "open_pr_count": 0,
   "open_implementation_pr_count": 0,
   "extractor_mapper": {
     "status": "active_runtime_boundary",
@@ -127,8 +113,8 @@
     "checked_at": "2026-10-03T13:00:00Z",
     "head_reference_mode": "live_github",
     "last_verified_main": {
-      "foundation": "8071e1f79065fae613783d11cc801aff2b827333",
-      "operations": "51756272e0a161ca6367e981481b17b65e61d5c9"
+      "foundation": "3e96d60da48470005884e21a980f79218096d199",
+      "operations": "670e65ee168b64f34156623dea88549d7fa72a52"
     },
     "operations_last_sync_commits": [
       "6071508a8cf5e24001f2238f0b581003d2300865",
@@ -144,14 +130,8 @@
     "operations_diagnostics_facade": "Operations private/control_plane_diagnostics.py",
     "operations_diagnostics_infrastructure": "Operations private/control_plane_infrastructure.py",
     "live_acceptance_queue": {
-      "foundation": [
-        58,
-        157,
-        1249
-      ],
-      "operations": [
-        603
-      ],
+      "foundation": [58, 157, 1249],
+      "operations": [603],
       "total": 4
     },
     "production_operations_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
@@ -184,9 +164,7 @@
     "capability_catalog": "docs/GITHUB_APP_CAPABILITY_CATALOG.json",
     "policy": "docs/GITHUB_APP_INTEGRATION_POLICY.json",
     "first_party_operations_app": {
-      "repository_scope": [
-        "Z-Solo-King/operations"
-      ],
+      "repository_scope": ["Z-Solo-King/operations"],
       "maximum_permissions": {
         "contents": "read"
       },
@@ -260,10 +238,7 @@
   "ai_navigation": {
     "entrypoint": "docs/AI_SYSTEM_DIRECTORY.md",
     "unified_map": "docs/AI_SYSTEM_MAP.json",
-    "detailed_maps": [
-      "docs/AI_PROJECT_MAP.json",
-      "operations/docs/AI_PROJECT_MAP.json"
-    ],
+    "detailed_maps": ["docs/AI_PROJECT_MAP.json", "operations/docs/AI_PROJECT_MAP.json"],
     "classification_axes": [
       "functional_plane",
       "execution_class",
@@ -293,15 +268,8 @@
       "total": 621
     },
     "method": "fail-closed retirement workflow; protected/default/active-PR/release-tag/live-reference and divergent refs retained; expected SHAs revalidated before deletion",
-    "merged_architecture_prs": [
-      "foundation#1848",
-      "operations#1528"
-    ],
-    "retirement_authorization_prs": [
-      "foundation#1852",
-      "foundation#1854",
-      "operations#1530"
-    ],
+    "merged_architecture_prs": ["foundation#1848", "operations#1528"],
+    "retirement_authorization_prs": ["foundation#1852", "foundation#1854", "operations#1530"],
     "redundant_pr_closed": "foundation#1855",
     "evidence_limit": "Connector does not expose the push-triggered retirement workflow artifact/run listing; current branch-count deltas are verified from live GitHub refs.",
     "total_branches": 2310,
@@ -309,22 +277,14 @@
   },
   "continuity_refresh_2026_10_03": {
     "canonical_workflow": "cross-repository-contract-drift.yml",
-    "docs": [
-      "docs/CURRENT_SOURCE_OF_TRUTH.md",
-      "docs/FAMILY_SYNC_STATE.json"
-    ],
+    "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
     "reason": "keeps continuity metadata synchronized with the canonical overlap-validator path change"
   },
   "continuity_refresh_2026_10_04": {
-    "canonical_workflow": ".github/workflows/cross-repository-contract-drift.yml",
-    "docs": [
-      "docs/CURRENT_SOURCE_OF_TRUTH.md",
-      "docs/FAMILY_SYNC_STATE.json"
-    ],
+    "canonical_workflow": ".github/workflows/microscope-branch-retirement.yml",
+    "docs": ["docs/CURRENT_SOURCE_OF_TRUTH.md", "docs/FAMILY_SYNC_STATE.json"],
     "reason": "synchronize continuity metadata after Foundation runtime-promotion merge and live Operations main movement",
     "foundation_head": "8071e1f79065fae613783d11cc801aff2b827333",
-    "operations_head": "51756272e0a161ca6367e981481b17b65e61d5c9",
-    "candidate_production_pin": "621fc8aa536b60bbc6f9e686c4ce0a769d8cab56",
-    "observed_production_pin": "11f592116d9ef57b6189bf8bf0ff0e95ec3d410f"
+    "operations_head": "51756272e0a161ca6367e981481b17b65e61d5c9"
   }
 }
