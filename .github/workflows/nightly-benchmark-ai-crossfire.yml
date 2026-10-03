@@ -83,7 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .runtime/result
-          python - <<'PY'
+          python - <<PY
           import hashlib, json, os, time, urllib.request
           from pathlib import Path
           final=json.loads(Path(".runtime/input/autonomous-nightly-benchmark-final.json").read_text())
