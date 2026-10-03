@@ -27,8 +27,8 @@ assert(/generation_status:\s*['"]deterministic_test['"]/.test(guest), 'guest res
 assert(guest.includes('pending: false'), 'guest lifecycle must clear pending state');
 assert(guest.includes('streaming: false'), 'guest lifecycle must terminate streaming state');
 assert(guest.includes('normalizedText.slice(0, 1200)'), 'guest echo must cap normalized user text');
-assert(app.includes("if (!normalizedText) throw new Error('Message is required');"), 'guest direct-call input guard is missing');
-assert(app.includes("if (normalizedText.length > 12_000) throw new Error('Message exceeds the 12000 character limit');"), 'guest direct-call length guard is missing');
+assert(/if\s*\(\!normalizedText\)\s*throw new Error\(["']Message is required["']\);/.test(app), 'guest direct-call input guard is missing');
+assert(/if\s*\(normalizedText\.length\s*>\s*12_000\)\s*throw new Error\(["']Message exceeds the 12000 character limit["']\);/.test(app), 'guest direct-call length guard is missing');
 assert(state.includes('function newChat()'), 'new chat state lifecycle is missing');
 assert(state.includes("title: 'New chat'"), 'new chats must start with the canonical title');
 assert(state.includes('setActiveChat(chat.id)'), 'new chats must become the active chat');
