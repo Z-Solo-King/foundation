@@ -39,7 +39,7 @@ jobs:
           if not re.fullmatch(r"[0-9a-f]{40}", value): raise SystemExit("invalid Operations production pin")
           print(value)
           PY
-)"
+          )"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - name: Checkout private Operations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
