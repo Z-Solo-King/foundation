@@ -132,6 +132,18 @@ jobs:
           test -s .runtime/live-ai-crossfire/private.json
           jq '{schema:"live-ai-provider-crossfire-summary/v1",generated_at,comparison_state:(.comparison_state // "complete"),limitation:(.limitation // null),provider_count:(.providers|length),call_count,batch_wall_ms,successful_calls:([.providers[]?.successes]|add // 0),failed_calls:([.providers[]?.failures]|add // 0),quality_passes:([.providers[]?.quality_passes]|add // 0),quality_total:([.providers[]?.quality_total]|add // 0)}' .runtime/live-ai-crossfire/private.json > .runtime/live-ai-crossfire/summary.json
 
+      - name: Enforce comparative benchmark availability
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .runtime/live-ai-crossfire/summary.json
+          comparison_state="$(jq -r '.comparison_state // "complete"' .runtime/live-ai-crossfire/summary.json)"
+          if [ "$comparison_state" = "comparison_unavailable" ]; then
+            echo "Provider CrossFire incomplete: fewer than two configured providers; benchmark result remains non-comparative."
+            exit 1
+          fi
+
       - name: Upload public-safe evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
