@@ -117,7 +117,7 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async function submitGuestTestChat(text, chatId) {
+  async function submitGuestTestChat(text, activeChatId) {
     const normalizedText = String(text || '').trim();
     if (!normalizedText) throw new Error('Message is required');
     if (normalizedText.length > 12_000) throw new Error('Message exceeds the 12000 character limit');
@@ -189,7 +189,7 @@
           sources: [],
         },
       };
-      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId, requestId, body } }));
+      document.dispatchEvent(new CustomEvent('rie:chat-response', { detail: { chatId: activeChatId, requestId, body } }));
       return body;
     } finally {
       api.state.submitting = false;
@@ -244,8 +244,8 @@
   }
 
   async function submitChat(text, chatId = api.state.activeChatId) {
-    if (!chatId) throw new Error('No active Heroic AI chat is available');
-    if (api.state.guestTestMode) return submitGuestTestChat(text, chatId);
+    const activeChatId = chatId || api.ensureChat().id;
+    if (api.state.guestTestMode) return submitGuestTestChat(text, activeChatId);
     if (!api.API_BASE) throw new Error('Heroic AI API base is not configured');
     const requestId = api.uuid();
     const abortController = new AbortController();
@@ -262,13 +262,13 @@
         signal: abortController.signal,
         headers: { ...api.authHeaders(true), Accept: 'text/event-stream', 'Idempotency-Key': requestId },
         body: JSON.stringify({
-          chat_id: chatId,
+          chat_id: activeChatId,
           request_id: requestId,
           message: text,
           mode: 'chat',
           strict_zero_cost_only: true,
           timezone_offset_minutes: -new Date().getTimezoneOffset(),
-          history: conversationHistory(chatId),
+          history: conversationHistory(activeChatId),
         }),
       });
       if (!response.ok) {
@@ -317,7 +317,7 @@
           text: answer || 'Chat streaming was cancelled in the browser. Backend completion state is unknown; reconnect or retry to observe it.',
         });
         document.dispatchEvent(new CustomEvent('rie:chat-stream-cancelled', {
-          detail: { chatId, requestId, responseId, partial: Boolean(answer) },
+          detail: { chatId: activeChatId, requestId, responseId, partial: Boolean(answer) },
         }));
         return {
           ok: false,
