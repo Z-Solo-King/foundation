@@ -1,0 +1,37 @@
+name: Temporary release packaging repair
+on:
+  push:
+    branches:
+      - fix/operations-worker-staging-packaging-2026-10-03
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Replay known-good packaging changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          git reset --hard origin/main
+          git cherry-pick bb158ad74102383dd9fd6f1a787fded74c3f8aaf
+          git cherry-pick 42369aecceb74a931afb3206fa4a0c0eb7c0d303
+          git cherry-pick 1add14e077bbfe4f758a0ebef717bbfd86186fca
+          git cherry-pick 4aaf2cc99f9418b658a0e876268825aa74407407
+          git cherry-pick 0efb531738c67f4cf6403450eb46ab472ac97730
+          bash -n scripts/production_release.sh
+      - name: Remove temporary repair workflow and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/_tmp-release-packaging-repair.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix: restore release packaging from current main"
+          git push --force-with-lease origin HEAD:fix/operations-worker-staging-packaging-2026-10-03
