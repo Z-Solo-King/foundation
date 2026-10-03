@@ -245,13 +245,13 @@ def test_private_operations_handoff_is_preflighted_and_diagnostic_runs_last():
     deployment = PRODUCTION_SCRIPT.read_text(encoding="utf-8")
     preflight = deployment.index("Preflight and stage the private Operations handoff")
     public_deploy = deployment.index(
-        "npx --yes wrangler@4.1311 deploy --config wrangler.production.generated.toml"
+        "npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml"
     )
     operations_deploy = deployment.index(
         '(cd "$operations_final_stage" && pywrangler deploy --config wrangler.toml --secrets-file'
     )
     diagnostic = deployment.index("infrastructure_verify_public_test")
-    success = deployment.rindex("Production release completed")
+    success = deployment.rindex("Production release completed for")
     assert preflight < public_deploy
     assert public_deploy < operations_deploy < diagnostic < success
 
@@ -687,7 +687,7 @@ def test_production_bootstrap_precedes_foundation_deploy_and_is_unconditional():
         bootstrap_stage,
     )
     public_deploy = deployment.index(
-        "npx --yes wrangler@4.1311 deploy --config wrangler.production.generated.toml",
+        "npx --yes wrangler@4.131.1 deploy --config wrangler.production.generated.toml",
         start,
     )
     assert bootstrap_stage < bootstrap_deploy < public_deploy
