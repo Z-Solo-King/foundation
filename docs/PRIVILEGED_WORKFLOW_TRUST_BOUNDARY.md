@@ -67,3 +67,6 @@ Credential-bearing workflows that probe or release the public application must t
 ## 2026-10-02 controlled Operations pin promotion staging
 
 The promotion PR may stage the next immutable Operations revision in post-release workflow consumers before production deployment. Those workflows fail closed on readiness/provenance mismatch. The manifest marks the revision as a candidate until the controlled production release and fresh runtime evidence complete; approval and live-state records continue to identify the currently deployed revision during that interval.
+## 2026-10-03 provider CrossFire runner boundary
+
+The privileged `live-ai-provider-crossfire.yml` workflow checks private Operations out beneath the GitHub Actions workspace and uses that workspace-local path consistently. Both Foundation and private Operations roots are supplied on `PYTHONPATH` for the benchmark runner. Provider credentials remain environment-scoped secrets. A comparative benchmark requires at least two configured providers; an unavailable comparison produces an explicit non-comparative receipt and fails the benchmark job.
