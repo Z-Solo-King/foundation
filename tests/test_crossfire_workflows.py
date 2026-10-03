@@ -19,6 +19,7 @@ def test_provider_crossfire_allows_up_to_six_and_records_unavailable_comparison(
     assert "--providers-max 6" in text
     assert "comparison_unavailable" in text
     assert "fewer than two configured direct providers" in text
+    assert "Enforce comparative benchmark availability" in text
     assert "path: operations-provider-benchmark" in text
     assert "${{ runner.temp }}/operations-provider-benchmark" not in text
     assert (
