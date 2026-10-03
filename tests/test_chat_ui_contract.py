@@ -61,3 +61,10 @@ def test_dashboard_styles_cover_provenance_and_errors():
     assert ".dashboard-provenance" in css
     assert ".dashboard-provider-resource" in css
     assert ".dashboard-error" in css
+
+def test_github_workspace_is_session_independent():
+    view = Path("frontend/github_view.js").read_text(encoding="utf-8")
+    assert 'X-GitHub-Access-Token' in view
+    assert "api.authHeaders" not in view
+    assert "sessionStorage" not in view
+    assert "githubToken" in view
