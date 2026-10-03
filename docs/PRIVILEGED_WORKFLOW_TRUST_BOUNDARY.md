@@ -134,3 +134,8 @@ Validation note: protected CI must evaluate the exact PR head after every runtim
 ## Production receipt publication fallback — 2026-10-04
 
 The canonical production release retains a sanitized receipt artifact as the durable evidence record. Publication of that receipt as a comment on issue #58 is best-effort because GitHub limits an issue to 2,500 comments; a comment-publication failure must not invalidate an otherwise successful release or remove the retained artifact evidence. The workflow does not treat issue-comment availability as deployment state or promotion authority.
+
+
+## Operations authentication boundary — 2026-10-04
+
+The certified production Operations runtime authorizes HTTP requests through `backend.worker_auth.authorized`. Foundation's privileged release validation asserts this current boundary rather than the retired `private.chat_auth` module, keeping the migration boundary explicit and preventing stale authorization assumptions from blocking or bypassing production validation.
