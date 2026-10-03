@@ -11,10 +11,7 @@
       "repo": "foundation",
       "number": 58,
       "title": "META: exhaustive Research Intelligence Engine coverage tracker",
-      "required_evidence": [
-        "live child-issue reconciliation",
-        "current family-integrity receipt"
-      ]
+      "required_evidence": ["live child-issue reconciliation", "current family-integrity receipt"]
     },
     {
       "repo": "foundation",
@@ -66,12 +63,7 @@
     "pin_selection": "immutable revision must pass the exact consumer contract before promotion; newer is not sufficient"
   },
   "ownership": {
-    "foundation": [
-      "public contracts",
-      "AI navigation",
-      "benchmark",
-      "GitHub Actions/CI"
-    ],
+    "foundation": ["public contracts", "AI navigation", "benchmark", "GitHub Actions/CI"],
     "operations": [
       "private runtime",
       "chatbot",
