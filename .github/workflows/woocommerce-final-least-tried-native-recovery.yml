@@ -20,6 +20,7 @@ jobs:
   crossfire:
     name: Prepare queue + six-provider crossfire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 25
     environment: production-secret-sync
     outputs:
@@ -119,6 +120,7 @@ jobs:
     name: Final recovery shard ${{ matrix.shard }}
     needs: crossfire
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 90
     environment: production-secret-sync
     strategy:
@@ -186,7 +188,7 @@ jobs:
   aggregate:
     name: Aggregate and validate 30-site evidence
     needs: recovery
-    if: ${{ always() }}
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
