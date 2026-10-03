@@ -254,3 +254,7 @@ The production release path is now corrected and has retained its 100% public-su
 ## 2026-10-04 production reconcile after validation alignment
 
 The protected public acceptance contract and the privileged production-release validation are now aligned. This commit is the controlled main-push trigger for one final canonical production-release execution; it introduces no deployment or provider authority.
+
+## 2026-10-04 final production reconcile after auth-boundary fix
+
+The certified Operations authorization assertion is aligned with `backend.worker_auth.authorized`, and the guarded production release path is ready for its final controlled execution. This commit is only the one-shot `chore:` trigger; it introduces no deployment authority or provider configuration change.
