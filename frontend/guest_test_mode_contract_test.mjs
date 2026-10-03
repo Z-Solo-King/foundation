@@ -34,10 +34,7 @@ assert(
   !guest.includes("Authorization"),
   "guest test mode must not construct Authorization headers",
 );
-assert(
-  /result_state: ["']TEST_ONLY["']/.test(guest),
-  "guest responses must be marked TEST_ONLY",
-);
+assert(/result_state: ["']TEST_ONLY["']/.test(guest), "guest responses must be marked TEST_ONLY");
 assert(
   /generation_status: ["']deterministic_test["']/.test(guest),
   "guest responses must identify deterministic test generation",
@@ -50,7 +47,9 @@ assert(
   "guest direct-call input guard is missing",
 );
 assert(
-  /if \(normalizedText\.length > 12_000\)\s*throw new Error\(["']Message exceeds the 12000 character limit["']\)/.test(app),
+  /if \(normalizedText\.length > 12_000\)\s*throw new Error\(["']Message exceeds the 12000 character limit["']\)/.test(
+    app,
+  ),
   "guest direct-call length guard is missing",
 );
 assert(state.includes("function newChat()"), "new chat state lifecycle is missing");
