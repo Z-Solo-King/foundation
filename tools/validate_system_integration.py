@@ -95,10 +95,10 @@ def validate_production_pin_consistency(foundation: Path, errors: list[str]) -> 
     # the actually approved/deployed revision rather than the staged candidate.
     if isinstance(approved, str) and SHA_RE.fullmatch(approved):
         require_text(
-            foundation / "tests/operations_main_guard.test.mjs",
+            foundation / "tests/validate_operations_main_guard.test.mjs",
             [approved],
             errors,
-            "production-pin:tests/operations_main_guard.test.mjs",
+            "production-pin:tests/validate_operations_main_guard.test.mjs",
         )
 
     research = ((manifest.get("pins") or {}).get("research_runtime") or {}).get("sha")
