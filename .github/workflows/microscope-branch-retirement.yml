@@ -1,6 +1,8 @@
 name: Microscope branch retirement
 
 on:
+  schedule:
+    - cron: "15 2 * * *"
   push:
     branches: [main]
   workflow_dispatch:
@@ -20,9 +22,14 @@ permissions:
   contents: write
   pull-requests: read
 
+concurrency:
+  group: microscope-branch-retirement
+  cancel-in-progress: false
+
 jobs:
   retire:
     if: >-
+      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'push' &&
@@ -46,7 +53,7 @@ jobs:
           args=(--report microscope-branch-retirement-report.json)
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.execute }}" == "true" ]]; then
             args+=(--execute)
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
+          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" ]]; then
             args+=(--execute)
           fi
           node tools/retire_microscope_branches.mjs "${args[@]}"

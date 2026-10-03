@@ -29,7 +29,7 @@ This contract therefore prevents the repository workflows from intentionally gra
 - The autonomous planner receives aggregate Operations findings before external AI use; private source paths and protected values are not sent as planner context.
 - AI output remains candidate assistance. Repository/code ownership, acceptance evidence, deployment, production promotion and rollback remain with their existing authorities.
 
-- `.github/workflows/microscope-branch-retirement.yml` is a privileged maintenance workflow. It runs only from trusted `main` pushes carrying the explicit `[microscope-retirement-authorized]` marker or from explicit manual dispatch; branch eligibility is recomputed from live refs and protected/active-PR/release/tag/live-reference/divergent refs remain non-executable.
+- `.github/workflows/microscope-branch-retirement.yml` is a privileged maintenance workflow. It runs only from its trusted daily schedule, trusted `main` pushes carrying the explicit `[microscope-retirement-authorized]` marker, or explicit manual dispatch; branch eligibility is recomputed from live refs and protected/active-PR/release/tag/live-reference/divergent refs remain non-executable.
 
 ## Live AI provider cross-fire
 
