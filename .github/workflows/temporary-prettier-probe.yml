@@ -1,0 +1,26 @@
+name: Temporary formatter probe
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run exact Prettier
+        run: |
+          set -euo pipefail
+          npx --yes prettier@3.9.9 --write .github/workflows/project-improvement-supervisor.yml tools/autonomous_engineering_supervisor.mjs
+          echo '--- project-improvement-supervisor.yml ---'
+          cat .github/workflows/project-improvement-supervisor.yml
+          echo '--- autonomous_engineering_supervisor.mjs ---'
+          cat tools/autonomous_engineering_supervisor.mjs
