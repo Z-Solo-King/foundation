@@ -32,6 +32,7 @@ Foundation reads the production Operations SHA from `docs/OPERATIONS_PIN_MANIFES
 The aggregate requires exactly six distinct model receipts. It fails closed when a lane is missing, duplicated, transport-failed, or schema-invalid.
 
 GitHub verifies:
+
 - expected and observed model count are both 6;
 - all 6 transports succeeded;
 - all 6 advisories comply with the exact schema;
