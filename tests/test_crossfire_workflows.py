@@ -19,6 +19,8 @@ def test_provider_crossfire_allows_up_to_six_and_records_unavailable_comparison(
     assert "--providers-max 6" in text
     assert "comparison_unavailable" in text
     assert "fewer than two configured direct providers" in text
+    assert "Enforce comparative benchmark availability" in text
+    assert "comparison_state" in text
 
 
 def test_live_provider_crossfire_has_autonomous_nightly_trigger():
@@ -32,3 +34,37 @@ def test_live_provider_crossfire_has_autonomous_nightly_trigger():
     assert "cancel-in-progress: false" in text
     assert "CHATGPT" not in text
     assert "session_id" not in text
+
+
+def test_live_provider_crossfire_uses_workspace_local_private_checkout():
+    text = (ROOT / ".github/workflows/live-ai-provider-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "path: operations-provider-benchmark" in text
+    assert "${{ runner.temp }}/operations-provider-benchmark" not in text
+    assert (
+        "OPERATIONS_CROSSFIRE_RUNNER: ${{ github.workspace }}/operations-provider-benchmark/private/benchmark/ai_provider_crossfire.py"
+        in text
+    )
+    assert (
+        "PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/operations-provider-benchmark"
+        in text
+    )
+    assert "working-directory: operations-provider-benchmark" in text
+
+
+def test_live_provider_crossfire_binds_approved_provider_secret_names():
+    text = (ROOT / ".github/workflows/live-ai-provider-crossfire.yml").read_text(
+        encoding="utf-8"
+    )
+    for secret_name in (
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "CEREBRAS_API_KEY",
+        "NVIDIA_NIM_API_KEY",
+        "COHERE_API_KEY",
+        "OPENROUTER_API_KEY",
+        "HF_TOKEN",
+        "SILICONFLOW_API_KEY",
+    ):
+        assert f"{secret_name}: ${{{{ secrets.{secret_name} }}}}" in text
