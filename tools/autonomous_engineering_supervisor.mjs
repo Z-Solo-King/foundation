@@ -227,7 +227,8 @@ export function deterministicFallbackPlan(context) {
     const issueText = issues.map((item) => String(item.title || '') + ' ' + String(item.body || '')).join(' ').toLowerCase();
     if (/woocommerce|feed|merchant/.test(issueText)) { missionType = 'feed_recovery'; workflows = MISSION_WORKFLOWS.feed_recovery; }
     else if (/migration|polyglot|mapper/.test(issueText)) { missionType = 'migration'; workflows = MISSION_WORKFLOWS.migration; }
-    else if (/research|nightly|provider/.test(issueText)) { missionType = 'nightly_research'; workflows = MISSION_WORKFLOWS.nightly_research; }
+    else if (/(provider.{0,40}(cross.?fire|benchmark)|cross.?fire.{0,40}provider)/.test(issueText)) { missionType = 'runtime_reconciliation'; workflows = MISSION_WORKFLOWS.runtime_reconciliation; }
+    else if (/research|nightly/.test(issueText)) { missionType = 'nightly_research'; workflows = MISSION_WORKFLOWS.nightly_research; }
     else if (/audit|security|integrity|governance/.test(issueText)) { missionType = 'audit'; workflows = MISSION_WORKFLOWS.audit; }
   }
   const workflowKey = (run) => String(run.path || '').split('/').pop() || String(run.name || '');
