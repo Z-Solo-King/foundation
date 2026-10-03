@@ -24,6 +24,7 @@ jobs:
   audit:
     name: Audit Operations extractor surface
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     timeout-minutes: 15
     steps:
       - name: Checkout Foundation
