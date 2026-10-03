@@ -1,0 +1,28 @@
+name: Temporary release-quality formatter
+on:
+  push:
+    branches:
+      - fix/workflow-regressions-current-main-2026-10-03
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Format release-quality workflow
+        run: npx --yes prettier --write .github/workflows/release-quality-regression.yml
+      - name: Remove formatter and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/_tmp-format-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "style: normalize release-quality workflow formatting"
+          git push
